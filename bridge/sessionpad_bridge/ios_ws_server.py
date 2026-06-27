@@ -6,7 +6,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
-from typing import Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, Optional
 
 import websockets
 from websockets.server import WebSocketServerProtocol
@@ -18,6 +18,40 @@ log = logging.getLogger(__name__)
 OnClientConnected = Callable[[uuid.UUID], Awaitable[None]]
 OnClientDisconnected = Callable[[uuid.UUID], Awaitable[None]]
 OnClientReceive = Callable[[uuid.UUID, str], Awaitable[None]]
+
+
+def _header_items(request_headers: Any) -> list[tuple[str, str]]:
+    """Extract header pairs from websockets Headers (any API version)."""
+    if request_headers is None:
+        return []
+    raw_items = getattr(request_headers, "raw_items", None)
+    if callable(raw_items):
+        return list(raw_items())
+    items = getattr(request_headers, "headers", None)
+    if items is not None:
+        return list(items)
+    return []
+
+
+async def _log_incoming_handshake(*args: Any) -> None:
+    """Log handshake headers before websockets validates Sec-WebSocket-Key/Version."""
+    path = "/"
+    request_headers = None
+
+    if len(args) == 1:
+        request = args[0]
+        path = getattr(request, "path", path) or path
+        request_headers = getattr(request, "headers", request)
+    elif len(args) >= 2:
+        path = args[0] if args[0] is not None else path
+        request_headers = args[1]
+
+    try:
+        items = _header_items(request_headers)
+        log.info("incoming handshake path=%s headers=%s", path, items)
+    except Exception:
+        log.info("incoming handshake path=%s (headers unavailable)", path)
+    return None
 
 
 class IOSWebSocketServer:
@@ -55,6 +89,7 @@ class IOSWebSocketServer:
             ping_interval=20,
             ping_timeout=20,
             compression=None,  # iOS URLSessionWebSocketTask cannot handle permessage-deflate
+            process_request=_log_incoming_handshake,
         )
         log.info("iOS WebSocket server ready on %s:%d", host, port)
 

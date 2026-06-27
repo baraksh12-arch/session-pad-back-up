@@ -26,6 +26,7 @@ final class WebSocketClient: @unchecked Sendable {
     private var task: URLSessionWebSocketTask?
     private var session: URLSession?
     private var resolveConnection: NWConnection?
+    private var bonjourResolver: BonjourResolver?
     private(set) var state: WebSocketClientState = .disconnected
     private var receiveLoopActive = false
     private var pingTimer: DispatchSourceTimer?
@@ -36,36 +37,36 @@ final class WebSocketClient: @unchecked Sendable {
             self.disconnectInternal()
             self.setState(.connecting)
 
-            let connection = NWConnection(to: endpoint, using: .tcp)
-            self.resolveConnection = connection
-            connection.stateUpdateHandler = { [weak self] connState in
-                guard let self else { return }
-                switch connState {
-                case .ready:
-                    guard let path = connection.currentPath,
-                          case .hostPort(let host, let port) = path.remoteEndpoint else {
-                        connection.cancel()
-                        self.resolveConnection = nil
-                        DispatchQueue.main.async { completion(.failure(WebSocketError.invalidEndpoint)) }
-                        return
+            // Bonjour .service endpoints: resolve host/port via NetService (mDNS only).
+            // Do NOT open a raw TCP connection to the WebSocket port — the Python bridge
+            // treats EOF as 400 Bad Request and iOS would fail to connect.
+            if case .service(let name, let type, let domain, _) = endpoint {
+                let resolver = BonjourResolver { [weak self] result in
+                    guard let self else { return }
+                    self.bonjourResolver = nil
+                    switch result {
+                    case .success(let url):
+                        self.openWebSocket(url: url, completion: completion)
+                    case .failure(let error):
+                        DispatchQueue.main.async { completion(.failure(error)) }
                     }
-                    let hostString = self.hostString(from: host)
-                    connection.cancel()
-                    self.resolveConnection = nil
-                    guard let url = URL(string: "ws://\(hostString):\(port.rawValue)/") else {
-                        DispatchQueue.main.async { completion(.failure(WebSocketError.invalidURL)) }
-                        return
-                    }
-                    self.openWebSocket(url: url, completion: completion)
-                case .failed(let error):
-                    connection.cancel()
-                    self.resolveConnection = nil
-                    DispatchQueue.main.async { completion(.failure(error)) }
-                default:
-                    break
                 }
+                self.bonjourResolver = resolver
+                resolver.resolve(name: name, type: type, domain: domain)
+                return
             }
-            connection.start(queue: self.queue)
+
+            if case .hostPort(let host, let port) = endpoint {
+                let hostString = self.hostString(from: host)
+                guard let url = URL(string: "ws://\(hostString):\(port.rawValue)/") else {
+                    DispatchQueue.main.async { completion(.failure(WebSocketError.invalidURL)) }
+                    return
+                }
+                self.openWebSocket(url: url, completion: completion)
+                return
+            }
+
+            DispatchQueue.main.async { completion(.failure(WebSocketError.invalidEndpoint)) }
         }
     }
 
@@ -144,6 +145,8 @@ final class WebSocketClient: @unchecked Sendable {
         receiveLoopActive = false
         resolveConnection?.cancel()
         resolveConnection = nil
+        bonjourResolver?.cancel()
+        bonjourResolver = nil
         task?.cancel(with: .goingAway, reason: nil)
         task = nil
         session?.invalidateAndCancel()
@@ -217,12 +220,69 @@ enum WebSocketError: Error, LocalizedError {
     case notConnected
     case invalidURL
     case invalidEndpoint
+    case bonjourResolveFailed
 
     var errorDescription: String? {
         switch self {
         case .notConnected: return "WebSocket not connected"
         case .invalidURL: return "Invalid WebSocket URL"
         case .invalidEndpoint: return "Invalid network endpoint"
+        case .bonjourResolveFailed: return "Bonjour service resolution failed"
         }
+    }
+}
+
+// MARK: - BonjourResolver
+
+/// Resolves a Bonjour service to host/port via mDNS without opening TCP to the target port.
+private final class BonjourResolver: NSObject, NetServiceDelegate {
+    private var netService: NetService?
+    private let completion: (Result<URL, Error>) -> Void
+
+    init(completion: @escaping (Result<URL, Error>) -> Void) {
+        self.completion = completion
+    }
+
+    func resolve(name: String, type: String, domain: String) {
+        let serviceDomain = domain.isEmpty ? "local." : domain
+        let service = NetService(domain: serviceDomain, type: type, name: name)
+        service.delegate = self
+        netService = service
+        service.resolve(withTimeout: 5)
+    }
+
+    func cancel() {
+        netService?.stop()
+        netService?.delegate = nil
+        netService = nil
+    }
+
+    func netServiceDidResolveAddress(_ sender: NetService) {
+        guard sender.port > 0 else {
+            finish(.failure(WebSocketError.bonjourResolveFailed))
+            return
+        }
+        var host = sender.hostName ?? ""
+        if host.hasSuffix(".") {
+            host.removeLast()
+        }
+        guard !host.isEmpty,
+              let url = URL(string: "ws://\(host):\(sender.port)/") else {
+            finish(.failure(WebSocketError.invalidURL))
+            return
+        }
+        finish(.success(url))
+    }
+
+    func netService(_ sender: NetService, didNotResolve errorDict: [String: NSNumber]) {
+        _ = sender
+        _ = errorDict
+        finish(.failure(WebSocketError.bonjourResolveFailed))
+    }
+
+    private func finish(_ result: Result<URL, Error>) {
+        guard netService != nil else { return }
+        cancel()
+        completion(result)
     }
 }
