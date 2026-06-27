@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ClipListener.py
 # Attaches Ableton Live API property listeners to every clip slot
 # in the session. When a clip property changes, the listener fires
@@ -167,7 +168,7 @@ class ClipMatrixListener(object):
         """Called when tracks or scenes are added/removed.
 
         Rebuilds the entire listener matrix. This is the correct
-        approach — partial rebuild would risk missing slots.
+        approach -- partial rebuild would risk missing slots.
         """
         self._build_matrix()
         if self._on_structure_changed_cb:

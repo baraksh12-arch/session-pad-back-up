@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # TrackListener.py
 # Attaches Ableton Live API property listeners to track headers.
 # Fires JSON delta updates when track name, color, mute, solo, or arm changes.

@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 # SessionPad.py
-# Main Ableton Live Remote Script entry point (SessionPad10 — Live 10).
+# Main Ableton Live Remote Script entry point (SessionPad10 -- Live 10).
 #
 # Bridges Live session state to the SessionPad Bridge via localhost TCP.
 # All Live API access happens on Live's thread (update_display / listeners).
@@ -92,7 +93,7 @@ class SessionPad(object):
         except Exception:
             pass
 
-    # ─── Live API Required Interface ──────────────────────────────────────────
+    # --- Live API Required Interface ---
 
     def disconnect(self):
         try:
@@ -168,7 +169,7 @@ class SessionPad(object):
     def suggest_output_port(self):
         return ""
 
-    # ─── Bridge callbacks ─────────────────────────────────────────────────────
+    # --- Bridge callbacks ---
 
     def _on_bridge_connected(self):
         self._log("bridge connected on localhost:%d" % 17345)
@@ -191,7 +192,7 @@ class SessionPad(object):
             )
         )
 
-    # ─── Inbound message handling (Live thread) ───────────────────────────────
+    # --- Inbound message handling (Live thread) ---
 
     def _handle_inbound(self, text):
         msg, err = decode_message(text)
@@ -232,7 +233,7 @@ class SessionPad(object):
                 encode_message(T_ACK, payload=ack_payload, msg_id=msg_id)
             )
 
-    # ─── State change callbacks ───────────────────────────────────────────────
+    # --- State change callbacks ---
 
     def _on_clip_changed(self, track_index, scene_index, clip_slot):
         if not self._bridge.is_connected:
@@ -333,7 +334,7 @@ class SessionPad(object):
         except Exception as exc:
             self._log("playpos send failed: %s" % exc)
 
-    # ─── Outbound queue ───────────────────────────────────────────────────────
+    # --- Outbound queue ---
 
     def _next_seq(self):
         self._seq += 1

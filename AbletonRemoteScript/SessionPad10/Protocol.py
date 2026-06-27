@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 # Protocol.py
-# SessionPad JSON wire protocol — shared contract with iOS Protocol.swift.
+# SessionPad JSON wire protocol -- shared contract with iOS Protocol.swift.
 #
 # Envelope: { "v": int, "t": str, "seq": int?, "id": str?, "payload": object? }
 
@@ -44,7 +45,7 @@ T_HEARTBEAT = "heartbeat"
 T_ACK = "ack"
 T_CMD = "cmd"
 
-# Clip states — must match iOS ClipState
+# Clip states -- must match iOS ClipState
 CLIP_EMPTY = "empty"
 CLIP_STOPPED = "stopped"
 CLIP_PLAYING = "playing"

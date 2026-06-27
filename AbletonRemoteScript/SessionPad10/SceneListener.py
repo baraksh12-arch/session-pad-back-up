@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # SceneListener.py
 # Attaches Ableton Live API property listeners to scenes.
 # Fires JSON delta updates when a scene's name or color changes.

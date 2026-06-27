@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # CommandHandler.py
 # Executes JSON commands from the iOS app against Ableton Live's API.
 

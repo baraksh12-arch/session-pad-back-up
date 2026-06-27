@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # transport/LiveBridgeClient.py
 # TCP client connecting the Ableton Remote Script to the SessionPad Bridge.
 
@@ -29,7 +30,7 @@ class LiveBridgeClient(object):
         return self._connected
 
     def tick(self):
-        """Called from update_display — maintain connection and read data."""
+        """Called from update_display -- maintain connection and read data."""
         if self._sock is None:
             self._ticks_since_connect += 1
             if self._ticks_since_connect >= RECONNECT_INTERVAL_TICKS:
@@ -61,7 +62,7 @@ class LiveBridgeClient(object):
         sock = None
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            # Short blocking connect — reliable on localhost and only attempted
+            # Short blocking connect -- reliable on localhost and only attempted
             # periodically while disconnected.
             sock.settimeout(CONNECT_TIMEOUT_SEC)
             sock.connect((BRIDGE_HOST, BRIDGE_PORT))

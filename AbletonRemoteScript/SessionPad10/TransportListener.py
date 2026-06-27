@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # TransportListener.py
 # Attaches listeners to Ableton Live song-level transport properties:
 # is_playing, record_mode, metronome, overdub, tempo.
@@ -11,7 +12,7 @@ class TransportListener(object):
 
     def __init__(self, song, on_change):
         self._song = song
-        self._on_change = on_change  # () → None (caller reads song state directly)
+        self._on_change = on_change  # () -> None (caller reads song state directly)
         self._attach()
 
     def _attach(self):
