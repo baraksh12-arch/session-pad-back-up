@@ -18,6 +18,7 @@ protocol ConnectionControllerDelegate: AnyObject {
     func connectionController(_ controller: ConnectionController, didUpdateState state: ConnectionState)
     func connectionController(_ controller: ConnectionController, didReceive message: WireMessage)
     func connectionController(_ controller: ConnectionController, didUpdateLatencyMs latency: Double)
+    func connectionController(_ controller: ConnectionController, didUpdateDevices devices: [DiscoveredService], showPicker: Bool)
 }
 
 @MainActor
@@ -27,6 +28,8 @@ final class ConnectionController: ObservableObject {
     @Published private(set) var phase: ConnectionPhase = .idle
     @Published private(set) var latencyEstimate: String = "–"
     @Published private(set) var deviceName: String = "Ableton Live"
+    @Published private(set) var discoveredDevices: [DiscoveredService] = []
+    @Published private(set) var showDevicePicker = false
 
     weak var delegate: ConnectionControllerDelegate?
 
@@ -52,6 +55,12 @@ final class ConnectionController: ObservableObject {
     private let discoveryTimeout: TimeInterval = 15.0
     private(set) var showManualConnect = false
     private var usingManualEndpoint = false
+    private var selectedService: DiscoveredService?
+    private var userSelectedDevice = false
+    private var awaitingSelection = false
+    private var decisionTimer: Timer?
+    private var decisionPending = false
+    private let decisionDebounce: TimeInterval = 0.6
 
     init() {
         discovery.delegate = self
@@ -62,11 +71,17 @@ final class ConnectionController: ObservableObject {
         guard !isRunning else { return }
         isRunning = true
         reconnectAttempt = 0
+        userSelectedDevice = false
+        selectedService = nil
+        awaitingSelection = false
+        discoveredDevices = []
+        showDevicePicker = false
+        cancelDecisionTimer()
         setPhase(.browsing)
         setConnectionState(.connecting)
         discovery.start()
         scheduleDiscoveryTimeout()
-        scheduleReconnectIfNeeded(immediate: true)
+        notifyDevices()
     }
 
     func connectManually(host: String, port: UInt16 = SPBridge.iosWebSocketPort) {
@@ -78,6 +93,11 @@ final class ConnectionController: ObservableObject {
         }
         usingManualEndpoint = true
         showManualConnect = false
+        showDevicePicker = false
+        userSelectedDevice = false
+        selectedService = nil
+        awaitingSelection = false
+        cancelDecisionTimer()
         discoveryTimeoutTimer?.invalidate()
         reconnectTimer?.invalidate()
         pendingService = nil
@@ -99,11 +119,25 @@ final class ConnectionController: ObservableObject {
         }
     }
 
+    func selectDevice(_ service: DiscoveredService) {
+        userSelectedDevice = true
+        selectedService = service
+        awaitingSelection = false
+        showDevicePicker = false
+        cancelDecisionTimer()
+        discoveryTimeoutTimer?.invalidate()
+        reconnectTimer?.invalidate()
+        showManualConnect = false
+        notifyDevices()
+        connect(to: service)
+    }
+
     func stop() {
         isRunning = false
         invalidateTimers()
         reconnectTimer?.invalidate()
         reconnectTimer = nil
+        cancelDecisionTimer()
         webSocket.disconnect()
         discovery.stop()
         discoveryTimeoutTimer?.invalidate()
@@ -111,9 +145,15 @@ final class ConnectionController: ObservableObject {
         setPhase(.idle)
         setConnectionState(.disconnected)
         pendingService = nil
+        selectedService = nil
         pendingCommands.removeAll()
         showManualConnect = false
+        showDevicePicker = false
+        discoveredDevices = []
+        userSelectedDevice = false
+        awaitingSelection = false
         usingManualEndpoint = false
+        notifyDevices()
     }
 
     func sendCommand(name: String, data: [String: JSONValue]) async throws -> String {
@@ -159,6 +199,17 @@ final class ConnectionController: ObservableObject {
     }
 
     private func connect(to service: DiscoveredService) {
+        if pendingService == service {
+            switch phase {
+            case .connecting, .handshaking, .synced, .live:
+                os_log(.info, log: log, "Skipping duplicate connect to %{public}@ (phase=%{public}@)", service.name, String(describing: phase))
+                return
+            default:
+                break
+            }
+        }
+
+        os_log(.info, log: log, "Connecting to %{public}@", service.displayHostName)
         pendingService = service
         setPhase(.connecting)
         setConnectionState(.connecting)
@@ -172,10 +223,11 @@ final class ConnectionController: ObservableObject {
                 guard let self else { return }
                 switch result {
                 case .success:
+                    os_log(.info, log: self.log, "WebSocket open succeeded for %{public}@", service.displayHostName)
                     self.setPhase(.handshaking)
                     await self.performHandshake()
                 case .failure(let error):
-                    os_log(.error, log: self.log, "Connect failed: %{public}@", error.localizedDescription)
+                    os_log(.error, log: self.log, "Connect failed for %{public}@: %{public}@", service.displayHostName, error.localizedDescription)
                     self.handleDisconnect()
                 }
             }
@@ -286,6 +338,7 @@ final class ConnectionController: ObservableObject {
         latencyEstimate = "–"
         pingSentAt = nil
         if isRunning {
+            cancelDecisionTimer()
             setPhase(.browsing)
             setConnectionState(.connecting)
             if usingManualEndpoint {
@@ -348,7 +401,7 @@ final class ConnectionController: ObservableObject {
             return
         }
 
-        if let service = discovery.bestService() ?? pendingService {
+        if userSelectedDevice, let service = selectedService ?? pendingService {
             let delay = immediate ? 0.0 : reconnectDelays[min(reconnectAttempt, reconnectDelays.count - 1)]
             reconnectAttempt += 1
             reconnectTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
@@ -357,10 +410,138 @@ final class ConnectionController: ObservableObject {
                     self.connect(to: service)
                 }
             }
-        } else {
+            return
+        }
+
+        refreshDiscoveredDevices()
+        if discoveredDevices.count >= 2 {
+            awaitingSelection = true
+            showDevicePicker = true
+            notifyDevices()
             setPhase(.browsing)
             setConnectionState(.connecting)
+            return
         }
+
+        if discoveredDevices.count == 1 {
+            evaluateAutoConnectOrPicker()
+            return
+        }
+
+        setPhase(.browsing)
+        setConnectionState(.connecting)
+    }
+
+    private func refreshDiscoveredDevices() {
+        discoveredDevices = discovery.snapshot()
+    }
+
+    private func notifyDevices() {
+        delegate?.connectionController(self, didUpdateDevices: discoveredDevices, showPicker: showDevicePicker)
+    }
+
+    private func cancelDecisionTimer() {
+        decisionTimer?.invalidate()
+        decisionTimer = nil
+        decisionPending = false
+    }
+
+    private func scheduleDecisionTimerIfNeeded() {
+        guard !decisionPending else { return }
+
+        decisionPending = true
+        os_log(.info, log: log, "Decision timer scheduled (%.1fs debounce)", decisionDebounce)
+
+        decisionTimer?.invalidate()
+        decisionTimer = Timer.scheduledTimer(withTimeInterval: decisionDebounce, repeats: false) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.fireDecisionTimer()
+            }
+        }
+    }
+
+    private func fireDecisionTimer() {
+        decisionPending = false
+        decisionTimer = nil
+
+        guard isRunning, !usingManualEndpoint else { return }
+        if case .connected = connectionState { return }
+        if userSelectedDevice { return }
+
+        let devices = discovery.snapshot()
+        discoveredDevices = devices
+        let count = devices.count
+
+        os_log(.info, log: log, "Decision timer fired: %d device(s) visible", count)
+
+        if count >= 2 {
+            awaitingSelection = true
+            showDevicePicker = true
+            notifyDevices()
+            setPhase(.browsing)
+            setConnectionState(.connecting)
+            return
+        }
+
+        if count == 1, let only = devices.first {
+            showDevicePicker = false
+            awaitingSelection = false
+            notifyDevices()
+            connect(to: only)
+            return
+        }
+
+        showDevicePicker = false
+        awaitingSelection = false
+        notifyDevices()
+        setPhase(.browsing)
+        setConnectionState(.connecting)
+    }
+
+    private func evaluateAutoConnectOrPicker() {
+        guard isRunning, !usingManualEndpoint else { return }
+        if case .connected = connectionState { return }
+
+        if pendingService != nil, phase == .connecting || phase == .handshaking {
+            os_log(.info, log: log, "Skipping evaluate — connect in progress to %{public}@", pendingService?.name ?? "?")
+            return
+        }
+
+        if userSelectedDevice, let service = selectedService {
+            cancelDecisionTimer()
+            showDevicePicker = false
+            awaitingSelection = false
+            notifyDevices()
+            connect(to: service)
+            return
+        }
+
+        refreshDiscoveredDevices()
+        let count = discoveredDevices.count
+
+        if count == 0 {
+            showDevicePicker = false
+            awaitingSelection = false
+            notifyDevices()
+            setPhase(.browsing)
+            setConnectionState(.connecting)
+            return
+        }
+
+        if count >= 2 {
+            cancelDecisionTimer()
+            awaitingSelection = true
+            showDevicePicker = true
+            notifyDevices()
+            setPhase(.browsing)
+            setConnectionState(.connecting)
+            return
+        }
+
+        showDevicePicker = false
+        awaitingSelection = false
+        notifyDevices()
+        scheduleDecisionTimerIfNeeded()
     }
 
     func reconcilePendingCommands() {
@@ -381,12 +562,14 @@ extension ConnectionController: SessionDiscoveryDelegate {
     nonisolated func discovery(_ discovery: SessionDiscovery, didFind service: DiscoveredService) {
         Task { @MainActor [weak self] in
             guard let self, self.isRunning else { return }
+            self.refreshDiscoveredDevices()
+            os_log(.info, log: self.log, "didFind %{public}@ — %d device(s) visible", service.displayHostName, self.discoveredDevices.count)
             if case .connected = self.connectionState { return }
+            if self.usingManualEndpoint { return }
             if self.phase == .browsing || self.phase == .connecting {
                 self.discoveryTimeoutTimer?.invalidate()
                 self.showManualConnect = false
-                self.reconnectTimer?.invalidate()
-                self.connect(to: service)
+                self.evaluateAutoConnectOrPicker()
             }
         }
     }
@@ -394,8 +577,20 @@ extension ConnectionController: SessionDiscoveryDelegate {
     nonisolated func discovery(_ discovery: SessionDiscovery, didLose service: DiscoveredService) {
         Task { @MainActor [weak self] in
             guard let self else { return }
+            self.refreshDiscoveredDevices()
+            os_log(.info, log: self.log, "didLose %{public}@ — %d device(s) visible", service.displayHostName, self.discoveredDevices.count)
+
             if self.pendingService == service {
+                os_log(.info, log: self.log, "Lost active target %{public}@ — disconnecting", service.displayHostName)
                 self.handleDisconnect()
+                return
+            }
+
+            if case .connected = self.connectionState { return }
+            guard self.isRunning else { return }
+            if self.usingManualEndpoint { return }
+            if self.phase == .browsing || self.phase == .connecting {
+                self.evaluateAutoConnectOrPicker()
             }
         }
     }

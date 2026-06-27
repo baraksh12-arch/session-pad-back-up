@@ -292,19 +292,37 @@ private final class BonjourResolver: NSObject, NetServiceDelegate {
             serviceType += "."
         }
 
-        let service = NetService(domain: serviceDomain, type: serviceType, name: name)
-        service.delegate = self
-        netService = service
-        service.schedule(in: .main, forMode: .default)
-        service.resolve(withTimeout: 5)
+        // NetService must be created, scheduled, and resolved on a thread with a
+        // live run loop. resolve() is called from the WebSocket background queue,
+        // so hop to the main run loop or the delegate callbacks never fire.
+        let startOnMain = { [weak self] in
+            guard let self else { return }
+            let service = NetService(domain: serviceDomain, type: serviceType, name: name)
+            service.delegate = self
+            self.netService = service
+            service.schedule(in: .main, forMode: .common)
+            service.resolve(withTimeout: 5)
+        }
+        if Thread.isMainThread {
+            startOnMain()
+        } else {
+            DispatchQueue.main.async(execute: startOnMain)
+        }
     }
 
     func cancel() {
         guard let service = netService else { return }
-        service.stop()
-        service.remove(from: .main, forMode: .default)
-        service.delegate = nil
         netService = nil
+        let stopOnMain = {
+            service.stop()
+            service.remove(from: .main, forMode: .common)
+            service.delegate = nil
+        }
+        if Thread.isMainThread {
+            stopOnMain()
+        } else {
+            DispatchQueue.main.async(execute: stopOnMain)
+        }
     }
 
     func netServiceDidResolveAddress(_ sender: NetService) {

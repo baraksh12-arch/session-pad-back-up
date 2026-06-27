@@ -34,6 +34,8 @@ final class SessionViewModel: ObservableObject {
     var clipProgress: ClipProgressStore { bridge.progress }
     var connectionState: ConnectionState { bridge.connectionState }
     var showManualConnect: Bool { bridge.showManualConnect }
+    var discoveredDevices: [DiscoveredService] { bridge.discoveredDevices }
+    var showDevicePicker: Bool { bridge.showDevicePicker }
 
     // MARK: Private
 
@@ -207,6 +209,10 @@ final class SessionViewModel: ObservableObject {
 
     func requestSync() {
         bridge.requestFullSync()
+    }
+
+    func selectDevice(_ service: DiscoveredService) {
+        bridge.selectDevice(service)
     }
 }
 

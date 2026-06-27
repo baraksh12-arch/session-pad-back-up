@@ -6,60 +6,75 @@ import SwiftUI
 struct ConnectionStatusView: View {
     let state: ConnectionState
     let showManualConnect: Bool
+    let devices: [DiscoveredService]
+    let showDevicePicker: Bool
     let onRetry: () -> Void
     let onManualConnect: (String, UInt16) -> Void
+    let onSelectDevice: (DiscoveredService) -> Void
 
     @State private var manualHost = ""
     @State private var manualPort = String(SPBridge.iosWebSocketPort)
 
     var body: some View {
-        VStack(spacing: 32) {
-            ZStack {
-                Circle()
-                    .fill(iconBackgroundColor)
-                    .frame(width: 80, height: 80)
+        GeometryReader { geo in
+            ScrollView {
+                VStack(spacing: 28) {
+                    ZStack {
+                        Circle()
+                            .fill(iconBackgroundColor)
+                            .frame(width: 80, height: 80)
 
-                Image(systemName: iconName)
-                    .font(.system(size: 32, weight: .light))
-                    .foregroundColor(iconColor)
+                        Image(systemName: iconName)
+                            .font(.system(size: 32, weight: .light))
+                            .foregroundColor(iconColor)
+                    }
+
+                    VStack(spacing: 8) {
+                        Text(title)
+                            .font(.title2.weight(.bold))
+                            .foregroundColor(.white)
+
+                        Text(subtitle)
+                            .font(.body)
+                            .foregroundColor(Color(white: 0.5))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                    }
+
+                    if case .disconnected = state {
+                        setupStepsView
+                    }
+
+                    if showDevicePicker && !devices.isEmpty {
+                        deviceListView
+                    }
+
+                    if showManualConnect {
+                        manualConnectView
+                    }
+
+                    Button {
+                        onRetry()
+                    } label: {
+                        Label("Try Again", systemImage: "arrow.clockwise")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.black)
+                            .frame(width: 160, height: 44)
+                            .background(Color.white)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 4)
+                }
+                .padding(.horizontal, 40)
+                .padding(.vertical, 32)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: geo.size.height)
             }
-
-            VStack(spacing: 8) {
-                Text(title)
-                    .font(.title2.weight(.bold))
-                    .foregroundColor(.white)
-
-                Text(subtitle)
-                    .font(.body)
-                    .foregroundColor(Color(white: 0.5))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-            }
-
-            if case .disconnected = state {
-                setupStepsView
-            }
-
-            if showManualConnect {
-                manualConnectView
-            }
-
-            Button {
-                onRetry()
-            } label: {
-                Label("Try Again", systemImage: "arrow.clockwise")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.black)
-                    .frame(width: 160, height: 44)
-                    .background(Color.white)
-                    .clipShape(Capsule())
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 8)
+            .scrollIndicators(.visible)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(white: 0.04))
         }
-        .padding(40)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(white: 0.04))
     }
 
     @ViewBuilder
@@ -72,6 +87,58 @@ struct ConnectionStatusView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 20)
+        .background(Color(white: 0.09))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 24)
+    }
+
+    @ViewBuilder
+    private var deviceListView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Choose a device")
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(.white)
+
+            Text("Multiple SessionPad bridges were found on your network.")
+                .font(.caption)
+                .foregroundColor(Color(white: 0.5))
+
+            ForEach(devices) { device in
+                Button {
+                    onSelectDevice(device)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "desktopcomputer")
+                            .font(.system(size: 18))
+                            .foregroundColor(Color(white: 0.7))
+                            .frame(width: 28)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(device.displayHostName)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.white)
+                            if let subtitle = device.displaySubtitle {
+                                Text(subtitle)
+                                    .font(.caption)
+                                    .foregroundColor(Color(white: 0.5))
+                            }
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color(white: 0.4))
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(Color(white: 0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(16)
         .background(Color(white: 0.09))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .padding(.horizontal, 24)
@@ -146,6 +213,9 @@ struct ConnectionStatusView: View {
     }
 
     private var title: String {
+        if showDevicePicker && !devices.isEmpty {
+            return "Select a Device"
+        }
         switch state {
         case .disconnected: return "Not Connected"
         case .connecting:   return "Searching…"
@@ -155,6 +225,9 @@ struct ConnectionStatusView: View {
     }
 
     private var subtitle: String {
+        if showDevicePicker && !devices.isEmpty {
+            return "Tap the bridge you want to control."
+        }
         switch state {
         case .disconnected:
             return "Searching for SessionPad Bridge on your network.\nMake sure the bridge app is running on your Mac and Ableton Live has the SessionPad control surface enabled."

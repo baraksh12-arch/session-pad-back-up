@@ -22,6 +22,8 @@ final class AbletonBridge: ObservableObject {
     let progress = ClipProgressStore()
 
     @Published private(set) var showManualConnect = false
+    @Published private(set) var discoveredDevices: [DiscoveredService] = []
+    @Published private(set) var showDevicePicker = false
 
     private let connection = ConnectionController()
     private let log = OSLog(subsystem: "com.scharovsky.SessionPad", category: "Bridge")
@@ -148,6 +150,10 @@ final class AbletonBridge: ObservableObject {
 
     func connectManually(host: String, port: UInt16 = SPBridge.iosWebSocketPort) {
         connection.connectManually(host: host, port: port)
+    }
+
+    func selectDevice(_ service: DiscoveredService) {
+        connection.selectDevice(service)
     }
 
     // MARK: - Private
@@ -283,5 +289,10 @@ extension AbletonBridge: ConnectionControllerDelegate {
 
     func connectionController(_ controller: ConnectionController, didUpdateLatencyMs latency: Double) {
         latencyEstimate = String(format: "%.0f ms", latency)
+    }
+
+    func connectionController(_ controller: ConnectionController, didUpdateDevices devices: [DiscoveredService], showPicker: Bool) {
+        discoveredDevices = devices
+        showDevicePicker = showPicker
     }
 }

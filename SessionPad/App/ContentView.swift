@@ -95,6 +95,8 @@ struct ContentView: View {
             ConnectionStatusView(
                 state: viewModel.connectionState,
                 showManualConnect: viewModel.showManualConnect,
+                devices: viewModel.discoveredDevices,
+                showDevicePicker: viewModel.showDevicePicker,
                 onRetry: {
                     bridge.stop()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
@@ -103,6 +105,9 @@ struct ContentView: View {
                 },
                 onManualConnect: { host, port in
                     bridge.connectManually(host: host, port: port)
+                },
+                onSelectDevice: { device in
+                    bridge.selectDevice(device)
                 }
             )
         }

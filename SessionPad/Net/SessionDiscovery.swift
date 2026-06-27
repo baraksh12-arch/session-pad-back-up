@@ -5,11 +5,30 @@ import Foundation
 import Network
 import os.log
 
-struct DiscoveredService: Equatable, Sendable {
+struct DiscoveredService: Equatable, Sendable, Identifiable {
     let name: String
     let endpoint: NWEndpoint
     let protocolVersion: Int?
     let sessionName: String?
+
+    var id: String { name }
+
+    /// Host label from Bonjour instance name, e.g. "SessionPad (MyMac)" → "MyMac".
+    var displayHostName: String {
+        let prefix = "SessionPad ("
+        let suffix = ")"
+        if name.hasPrefix(prefix), name.hasSuffix(suffix) {
+            let start = name.index(name.startIndex, offsetBy: prefix.count)
+            let end = name.index(name.endIndex, offsetBy: -suffix.count)
+            return String(name[start..<end])
+        }
+        return name
+    }
+
+    var displaySubtitle: String? {
+        guard let sessionName, !sessionName.isEmpty else { return nil }
+        return sessionName
+    }
 }
 
 protocol SessionDiscoveryDelegate: AnyObject {
@@ -46,6 +65,12 @@ final class SessionDiscovery: @unchecked Sendable {
     func bestService() -> DiscoveredService? {
         queue.sync {
             discovered.values.sorted { $0.name < $1.name }.first
+        }
+    }
+
+    func snapshot() -> [DiscoveredService] {
+        queue.sync {
+            discovered.values.sorted { $0.name < $1.name }
         }
     }
 
