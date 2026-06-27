@@ -1,0 +1,577 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A1000001 /* SessionPadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000001 /* SessionPadApp.swift */; };
+		A1000002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002 /* AppDelegate.swift */; };
+		A1000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000003 /* ContentView.swift */; };
+		A1000004 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000004 /* Models.swift */; };
+		A1000007 /* AbletonBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000007 /* AbletonBridge.swift */; };
+		A1000009 /* SessionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000009 /* SessionViewModel.swift */; };
+		A1000010 /* SessionGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000010 /* SessionGridView.swift */; };
+		A1000011 /* ClipSlotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000011 /* ClipSlotView.swift */; };
+		A1000012 /* TrackHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000012 /* TrackHeaderView.swift */; };
+		A1000013 /* TransportBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000013 /* TransportBarView.swift */; };
+		A1000014 /* ConnectionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000014 /* ConnectionStatusView.swift */; };
+		A1000015 /* PerformanceModeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000015 /* PerformanceModeView.swift */; };
+		A1000016 /* ColorMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000016 /* ColorMapper.swift */; };
+		A1000017 /* HapticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000017 /* HapticEngine.swift */; };
+		A1000020 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1000021 /* Assets.xcassets */; };
+		A1000021 /* Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000022 /* Protocol.swift */; };
+		A1000022 /* SessionDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000023 /* SessionDiscovery.swift */; };
+		A1000023 /* WebSocketClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000024 /* WebSocketClient.swift */; };
+		A1000024 /* ConnectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000025 /* ConnectionController.swift */; };
+		A1000030 /* Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000022 /* Protocol.swift */; };
+		A1000031 /* BridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000031 /* BridgeApp.swift */; };
+		A1000032 /* LiveLinkServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000032 /* LiveLinkServer.swift */; };
+		A1000033 /* IOSWebSocketServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000033 /* IOSWebSocketServer.swift */; };
+		A1000034 /* BridgeRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000034 /* BridgeRouter.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B1000001 /* SessionPadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionPadApp.swift; sourceTree = "<group>"; };
+		B1000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		B1000003 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		B1000004 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		B1000007 /* AbletonBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AbletonBridge.swift; sourceTree = "<group>"; };
+		B1000009 /* SessionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionViewModel.swift; sourceTree = "<group>"; };
+		B1000010 /* SessionGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionGridView.swift; sourceTree = "<group>"; };
+		B1000011 /* ClipSlotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipSlotView.swift; sourceTree = "<group>"; };
+		B1000012 /* TrackHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackHeaderView.swift; sourceTree = "<group>"; };
+		B1000013 /* TransportBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransportBarView.swift; sourceTree = "<group>"; };
+		B1000014 /* ConnectionStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionStatusView.swift; sourceTree = "<group>"; };
+		B1000015 /* PerformanceModeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceModeView.swift; sourceTree = "<group>"; };
+		B1000016 /* ColorMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorMapper.swift; sourceTree = "<group>"; };
+		B1000017 /* HapticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticEngine.swift; sourceTree = "<group>"; };
+		B1000020 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B1000021 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B1000022 /* Protocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Protocol.swift; sourceTree = "<group>"; };
+		B1000023 /* SessionDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDiscovery.swift; sourceTree = "<group>"; };
+		B1000024 /* WebSocketClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketClient.swift; sourceTree = "<group>"; };
+		B1000025 /* ConnectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionController.swift; sourceTree = "<group>"; };
+		B1000030 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B1000031 /* BridgeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeApp.swift; sourceTree = "<group>"; };
+		B1000032 /* LiveLinkServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveLinkServer.swift; sourceTree = "<group>"; };
+		B1000033 /* IOSWebSocketServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSWebSocketServer.swift; sourceTree = "<group>"; };
+		B1000034 /* BridgeRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeRouter.swift; sourceTree = "<group>"; };
+		B1000035 /* SessionPadBridge.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SessionPadBridge.entitlements; sourceTree = "<group>"; };
+		C1000001 /* SessionPad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SessionPad.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1000002 /* SessionPadBridge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SessionPadBridge.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D1000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D1000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		E1000000 /* SessionPad */ = {
+			isa = PBXGroup;
+			children = (
+				E1000001 /* App */,
+				E1000002 /* Models */,
+				E1000003 /* Bridge */,
+				E1000008 /* Net */,
+				E1000004 /* Views */,
+				E1000005 /* ViewModels */,
+				E1000006 /* Utilities */,
+				B1000021 /* Assets.xcassets */,
+				B1000020 /* Info.plist */,
+			);
+			path = SessionPad;
+			sourceTree = "<group>";
+		};
+		E1000001 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				B1000001 /* SessionPadApp.swift */,
+				B1000002 /* AppDelegate.swift */,
+				B1000003 /* ContentView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		E1000002 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				B1000004 /* Models.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		E1000003 /* Bridge */ = {
+			isa = PBXGroup;
+			children = (
+				B1000007 /* AbletonBridge.swift */,
+			);
+			path = Bridge;
+			sourceTree = "<group>";
+		};
+		E1000008 /* Net */ = {
+			isa = PBXGroup;
+			children = (
+				B1000023 /* SessionDiscovery.swift */,
+				B1000024 /* WebSocketClient.swift */,
+				B1000025 /* ConnectionController.swift */,
+			);
+			path = Net;
+			sourceTree = "<group>";
+		};
+		E1000004 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				B1000010 /* SessionGridView.swift */,
+				B1000011 /* ClipSlotView.swift */,
+				B1000012 /* TrackHeaderView.swift */,
+				B1000013 /* TransportBarView.swift */,
+				B1000014 /* ConnectionStatusView.swift */,
+				B1000015 /* PerformanceModeView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		E1000005 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				B1000009 /* SessionViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		E1000006 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				B1000016 /* ColorMapper.swift */,
+				B1000017 /* HapticEngine.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		E1000011 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				B1000022 /* Protocol.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		E1000012 /* SessionPadBridge */ = {
+			isa = PBXGroup;
+			children = (
+				B1000031 /* BridgeApp.swift */,
+				B1000032 /* LiveLinkServer.swift */,
+				B1000033 /* IOSWebSocketServer.swift */,
+				B1000034 /* BridgeRouter.swift */,
+				B1000030 /* Info.plist */,
+				B1000035 /* SessionPadBridge.entitlements */,
+			);
+			path = SessionPadBridge;
+			sourceTree = "<group>";
+		};
+		E1000009 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C1000001 /* SessionPad.app */,
+				C1000002 /* SessionPadBridge.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		E1000010 = {
+			isa = PBXGroup;
+			children = (
+				E1000000 /* SessionPad */,
+				E1000011 /* Shared */,
+				E1000012 /* SessionPadBridge */,
+				E1000009 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F1000001 /* SessionPad */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = G1000001 /* Build configuration list for PBXNativeTarget "SessionPad" */;
+			buildPhases = (
+				H1000001 /* Sources */,
+				D1000001 /* Frameworks */,
+				H1000002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SessionPad;
+			productName = SessionPad;
+			productReference = C1000001 /* SessionPad.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F1000002 /* SessionPadBridge */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = G1000003 /* Build configuration list for PBXNativeTarget "SessionPadBridge" */;
+			buildPhases = (
+				H1000003 /* Sources */,
+				D1000002 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SessionPadBridge;
+			productName = SessionPadBridge;
+			productReference = C1000002 /* SessionPadBridge.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F2000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					F1000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					F1000002 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = G1000002 /* Build configuration list for PBXProject "SessionPad" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = E1000010;
+			productRefGroup = E1000009 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F1000001 /* SessionPad */,
+				F1000002 /* SessionPadBridge */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		H1000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000020 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		H1000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000001 /* SessionPadApp.swift in Sources */,
+				A1000002 /* AppDelegate.swift in Sources */,
+				A1000003 /* ContentView.swift in Sources */,
+				A1000004 /* Models.swift in Sources */,
+				A1000007 /* AbletonBridge.swift in Sources */,
+				A1000009 /* SessionViewModel.swift in Sources */,
+				A1000010 /* SessionGridView.swift in Sources */,
+				A1000011 /* ClipSlotView.swift in Sources */,
+				A1000012 /* TrackHeaderView.swift in Sources */,
+				A1000013 /* TransportBarView.swift in Sources */,
+				A1000014 /* ConnectionStatusView.swift in Sources */,
+				A1000015 /* PerformanceModeView.swift in Sources */,
+				A1000016 /* ColorMapper.swift in Sources */,
+				A1000017 /* HapticEngine.swift in Sources */,
+				A1000021 /* Protocol.swift in Sources */,
+				A1000022 /* SessionDiscovery.swift in Sources */,
+				A1000023 /* WebSocketClient.swift in Sources */,
+				A1000024 /* ConnectionController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		H1000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000030 /* Protocol.swift in Sources */,
+				A1000031 /* BridgeApp.swift in Sources */,
+				A1000032 /* LiveLinkServer.swift in Sources */,
+				A1000033 /* IOSWebSocketServer.swift in Sources */,
+				A1000034 /* BridgeRouter.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		G2000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_CYCLE = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		G2000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_CYCLE = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		G3000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5ULL8M848J;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SessionPad/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.scharovsky.SessionPad;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		G3000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5ULL8M848J;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SessionPad/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.scharovsky.SessionPad;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		G3000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = SessionPadBridge/SessionPadBridge.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5ULL8M848J;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SessionPadBridge/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.scharovsky.SessionPadBridge;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		G3000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = SessionPadBridge/SessionPadBridge.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5ULL8M848J;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SessionPadBridge/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.scharovsky.SessionPadBridge;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		G1000001 /* Build configuration list for PBXNativeTarget "SessionPad" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				G3000001 /* Debug */,
+				G3000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		G1000002 /* Build configuration list for PBXProject "SessionPad" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				G2000001 /* Debug */,
+				G2000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		G1000003 /* Build configuration list for PBXNativeTarget "SessionPadBridge" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				G3000003 /* Debug */,
+				G3000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F2000001 /* Project object */;
+}

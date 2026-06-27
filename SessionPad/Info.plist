@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+
+    <!-- ─── Bundle Identity ─────────────────────────────────────────────── -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleDisplayName</key>
+    <string>SessionPad</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(MARKETING_VERSION)</string>
+    <key>CFBundleVersion</key>
+    <string>$(CURRENT_PROJECT_VERSION)</string>
+
+    <!-- ─── Local Network Access (Bonjour + WebSocket) ───────────────────
+         Required by iOS 14+ to discover and connect to Ableton Live on the
+         local network via _sessionpad._tcp Bonjour and WebSocket.
+    ──────────────────────────────────────────────────────────────────── -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>SessionPad uses the local network to discover and connect to Ableton Live automatically.</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_sessionpad._tcp</string>
+    </array>
+
+    <!-- ─── Orientation — iPhone (landscape only) ────────────────────────
+         The session grid controller is designed for landscape on iPhone.
+         Portrait would show too few tracks to be useful.
+         AppDelegate.application(_:supportedInterfaceOrientationsFor:)
+         enforces this at runtime; these keys set the initial launch
+         orientation so the splash screen is correct.
+    ──────────────────────────────────────────────────────────────────── -->
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+    <!-- ─── Orientation — iPad (all orientations) ────────────────────────
+         iPad has enough screen real estate for portrait use too.
+    ──────────────────────────────────────────────────────────────────── -->
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+    </array>
+
+    <!-- ─── Full-Screen (no Split View on iPad by default) ────────────── -->
+    <key>UIRequiresFullScreen</key>
+    <true/>
+
+    <!-- ─── Appearance ───────────────────────────────────────────────────
+         Force dark mode — the UI is designed exclusively for dark.
+    ──────────────────────────────────────────────────────────────────── -->
+    <key>UIUserInterfaceStyle</key>
+    <string>Dark</string>
+
+    <!-- ─── Launch Screen ────────────────────────────────────────────────
+         Minimal splash: just black background.
+         We don't use a storyboard launch screen because the app starts
+         in landscape and storyboard launch screens have portrait bias.
+    ──────────────────────────────────────────────────────────────────── -->
+    <key>UILaunchScreen</key>
+    <dict>
+        <key>UIImageName</key>
+        <string></string>
+        <key>UIColorName</key>
+        <string>LaunchBackground</string>
+    </dict>
+
+    <!-- ─── Scene Configuration (SwiftUI @main lifecycle) ────────────────
+         The SwiftUI App/WindowGroup lifecycle manages the window and scene
+         itself. We must NOT declare a custom UISceneDelegateClassName here —
+         doing so hands scene setup to a delegate that never builds a window,
+         producing a black screen on device. We only declare that the app
+         does not support multiple scenes.
+    ──────────────────────────────────────────────────────────────────── -->
+    <key>UIApplicationSceneManifest</key>
+    <dict>
+        <key>UIApplicationSupportsMultipleScenes</key>
+        <false/>
+    </dict>
+
+    <!-- ─── Status Bar ───────────────────────────────────────────────────
+         Hide in performance mode (done in code). Default: show.
+    ──────────────────────────────────────────────────────────────────── -->
+    <key>UIStatusBarHidden</key>
+    <false/>
+    <key>UIViewControllerBasedStatusBarAppearance</key>
+    <true/>
+
+    <!-- ─── Minimum OS Version ───────────────────────────────────────── -->
+    <key>MinimumOSVersion</key>
+    <string>16.0</string>
+
+</dict>
+</plist>
