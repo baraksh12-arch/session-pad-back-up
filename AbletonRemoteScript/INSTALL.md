@@ -20,6 +20,49 @@ Ableton Live (Remote Script) ←→ SessionPad Bridge ←→ SessionPad (iOS)
 
 ---
 
+## Ableton Live 10 setup
+
+Use the **SessionPad10** Remote Script (Python 2.7). Do **not** install the standard **SessionPad** script on Live 10 — it targets Live 11/12 (Python 3).
+
+### Install SessionPad10
+
+**macOS:**
+
+```bash
+cd "/path/to/SessionPad 2/AbletonRemoteScript"
+chmod +x install_live10.sh
+./install_live10.sh
+```
+
+**Windows:**
+
+```powershell
+cd "path\to\SessionPad 2\AbletonRemoteScript"
+.\install_live10.ps1
+```
+
+Install location:
+
+```
+~/Music/Ableton/User Library/Remote Scripts/SessionPad10/   (macOS)
+%USERPROFILE%\Documents\Ableton\User Library\Remote Scripts\SessionPad10\   (Windows)
+```
+
+### Configure Live 10
+
+1. Launch **SessionPad Bridge** first (macOS menu-bar app or Windows Python bridge / `.exe`).
+2. Fully quit and reopen Ableton Live 10.
+3. **Preferences → Link, Tempo & MIDI → Control Surface: SessionPad10** (Input/Output = None).
+4. Open SessionPad on iOS (same Wi-Fi).
+
+Verify in Log.txt for lines prefixed with `SessionPad10:` (e.g. `SessionPad10: bridge connected on localhost:17345`).
+
+### Live 10 color note
+
+Live 10 exposes clip/track/scene colors as RGB integers (`.color`), while Live 11/12 use palette indices (`color_index`). SessionPad10 sends the Live 10 RGB value in the same `color` field. Colors may appear differently in the iOS app compared to Live 11/12.
+
+---
+
 ## macOS setup
 
 ### Quick install (Remote Script)
@@ -211,7 +254,7 @@ If you see `RemoteScriptError` or `TypeError`, re-run the install script and res
 
 | Platform | Version |
 |---|---|
-| Ableton Live | 11.x, 12.x |
+| Ableton Live | 10.x (SessionPad10), 11.x, 12.x (SessionPad) |
 | macOS (Swift bridge) | 12+ |
 | Windows (Python bridge) | 10+ |
 | iOS / iPadOS | 16.0+ |
