@@ -27,6 +27,7 @@ struct ClipSlotView: View {
     let slot: LiveClipSlot
     let cellSize: CGSize
     var isArmed: Bool = false
+    var isTrackSelected: Bool = false
     @ObservedObject var progress: ClipProgressStore
     var bpm: Double = 120
     var isTransportPlaying: Bool = false
@@ -37,6 +38,7 @@ struct ClipSlotView: View {
         slot: LiveClipSlot,
         cellSize: CGSize,
         isArmed: Bool = false,
+        isTrackSelected: Bool = false,
         progress: ClipProgressStore,
         bpm: Double = 120,
         isTransportPlaying: Bool = false,
@@ -46,6 +48,7 @@ struct ClipSlotView: View {
         self.slot = slot
         self.cellSize = cellSize
         self.isArmed = isArmed
+        self.isTrackSelected = isTrackSelected
         self._progress = ObservedObject(wrappedValue: progress)
         self.bpm = bpm
         self.isTransportPlaying = isTransportPlaying
@@ -61,6 +64,11 @@ struct ClipSlotView: View {
         ZStack {
             // Background
             backgroundLayer
+
+            if isTrackSelected {
+                Color.white.opacity(0.06)
+                    .allowsHitTesting(false)
+            }
 
             // Content
             if !slot.isEmpty {

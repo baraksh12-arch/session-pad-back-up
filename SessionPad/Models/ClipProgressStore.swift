@@ -15,12 +15,36 @@ final class ClipProgressStore: ObservableObject {
 
     var samples: [String: ProgressSample] = [:]
 
-    func update(trackIndex: Int, sceneIndex: Int, fraction: Double, loopBeats: Double) {
+    func update(
+        trackIndex: Int,
+        sceneIndex: Int,
+        fraction: Double,
+        loopBeats: Double,
+        bpm: Double,
+        isTransportPlaying: Bool
+    ) {
         let key = "t\(trackIndex):s\(sceneIndex)"
+        let now = Date()
+
+        if let existing = samples[key], loopBeats > 0 {
+            let extrapolated = ClipProgressInterpolator.fraction(
+                sample: existing,
+                bpm: bpm,
+                isTransportPlaying: isTransportPlaying,
+                now: now
+            )
+            let isWrap = extrapolated > 0.7 && fraction < 0.3
+            let delta = ClipProgressInterpolator.wrapAwareDelta(from: extrapolated, to: fraction)
+
+            if delta < -0.05 && !isWrap {
+                return
+            }
+        }
+
         samples[key] = ProgressSample(
             fraction: fraction,
             loopBeats: loopBeats,
-            receivedAt: Date()
+            receivedAt: now
         )
         objectWillChange.send()
     }
@@ -44,6 +68,13 @@ final class ClipProgressStore: ObservableObject {
 
 enum ClipProgressInterpolator {
 
+    static func wrapAwareDelta(from current: Double, to incoming: Double) -> Double {
+        var delta = incoming - current
+        if delta > 0.5 { delta -= 1.0 }
+        if delta < -0.5 { delta += 1.0 }
+        return delta
+    }
+
     static func fraction(
         sample: ProgressSample?,
         bpm: Double,
@@ -56,8 +87,11 @@ enum ClipProgressInterpolator {
 
         let rate = (bpm / 60.0) / sample.loopBeats
         let elapsed = now.timeIntervalSince(sample.receivedAt)
-        let advanced = sample.fraction + elapsed * rate
-        return advanced.truncatingRemainder(dividingBy: 1.0)
+        let phase = sample.fraction + elapsed * rate
+        if phase >= 1.0 {
+            return phase - floor(phase)
+        }
+        return phase
     }
 }
 
@@ -75,6 +109,7 @@ struct ClipProgressFillView: View {
             Rectangle()
                 .fill(color.opacity(filledOpacity))
                 .frame(width: max(0, cellSize.width * fraction))
+                .transaction { $0.animation = nil }
         }
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
     }

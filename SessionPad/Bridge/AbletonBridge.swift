@@ -118,6 +118,10 @@ final class AbletonBridge: ObservableObject {
         sendCommand(name: "soloTrack", data: ["track": .int(trackIndex), "toggle": .bool(toggle)])
     }
 
+    func selectTrack(trackIndex: Int) {
+        sendCommand(name: "selectTrack", data: ["track": .int(trackIndex)])
+    }
+
     func play() {
         sendCommand(name: "transport", data: ["action": .string("play")]) {
             self.transport.isPlaying = true
@@ -245,7 +249,9 @@ final class AbletonBridge: ObservableObject {
                         trackIndex: clip.track,
                         sceneIndex: clip.scene,
                         fraction: clip.p,
-                        loopBeats: clip.lb
+                        loopBeats: clip.lb,
+                        bpm: transport.bpm,
+                        isTransportPlaying: transport.isPlaying
                     )
                 }
             }

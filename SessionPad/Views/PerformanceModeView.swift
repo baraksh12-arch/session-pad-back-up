@@ -23,13 +23,13 @@ struct PerformanceModeView: View {
                 // Minimal header bar
                 performanceHeader
 
-                // Full-screen grid
-                performanceGrid
-            }
-
-            // Lock overlay
-            if viewModel.isLocked {
-                lockOverlay
+                // Full-screen grid with lock overlay confined to grid area
+                ZStack {
+                    performanceGrid
+                    if viewModel.isLocked {
+                        lockOverlay
+                    }
+                }
             }
         }
         .statusBarHidden(true)
@@ -43,7 +43,7 @@ struct PerformanceModeView: View {
         HStack {
             // Exit performance mode
             Button {
-                viewModel.togglePerformanceMode()
+                viewModel.performanceMode = .normal
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 16, weight: .semibold))

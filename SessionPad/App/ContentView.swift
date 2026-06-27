@@ -43,7 +43,9 @@ struct ContentView: View {
         .fullScreenCover(
             isPresented: Binding(
                 get: { viewModel.performanceMode == .performance },
-                set: { if !$0 { viewModel.togglePerformanceMode() } }
+                set: { isPresented in
+                    viewModel.performanceMode = isPresented ? .performance : .normal
+                }
             )
         ) {
             PerformanceModeView(viewModel: viewModel)

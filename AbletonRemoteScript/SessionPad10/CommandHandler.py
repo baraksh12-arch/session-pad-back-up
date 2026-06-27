@@ -115,6 +115,12 @@ class CommandHandler(object):
         track = tracks[t_idx]
         track.solo = not track.solo if toggle else bool(payload.get("value", False))
 
+    def _cmd_selectTrack(self, payload):
+        t_idx = self._track_index(payload)
+        tracks = list(self._song.tracks)
+        if t_idx < len(tracks):
+            self._song.view.selected_track = tracks[t_idx]
+
     def _cmd_transport(self, payload):
         action = payload.get("action", "")
         song = self._song

@@ -13,7 +13,7 @@ import SwiftUI
 struct TransportBarView: View {
 
     @ObservedObject var transport: TransportState
-    let viewModel: SessionViewModel
+    @ObservedObject var viewModel: SessionViewModel
     let connectionState: ConnectionState
 
     @State private var showTempoSheet = false
@@ -38,6 +38,11 @@ struct TransportBarView: View {
 
             // Tempo
             tempoControl
+
+            divider
+
+            // Channel count + bank navigation
+            channelPagingControls
 
             divider
 
@@ -173,6 +178,75 @@ struct TransportBarView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+        }
+        .padding(.horizontal, isCompact ? 6 : 10)
+    }
+
+    // MARK: - Channel Paging Controls
+
+    @ViewBuilder
+    private var channelPagingControls: some View {
+        HStack(spacing: isCompact ? 3 : 6) {
+            // Decrease channels per page
+            Button { viewModel.decreaseChannelsPerPage() } label: {
+                Image(systemName: "minus")
+                    .font(.system(size: isCompact ? 10 : 12, weight: .semibold))
+                    .foregroundColor(viewModel.channelsPerPage > 2
+                        ? Color(white: 0.55) : Color(white: 0.25))
+                    .frame(width: isCompact ? 22 : 26, height: isCompact ? 28 : 34)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(viewModel.channelsPerPage <= 2)
+
+            // Channel count readout
+            VStack(spacing: 0) {
+                Text("\(viewModel.channelsPerPage)")
+                    .font(.system(size: isCompact ? 15 : 18, weight: .bold, design: .monospaced))
+                    .foregroundColor(.white)
+                if !isCompact {
+                    Text("CH")
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundColor(Color(white: 0.38))
+                }
+            }
+            .frame(minWidth: isCompact ? 28 : 36)
+
+            // Increase channels per page
+            Button { viewModel.increaseChannelsPerPage() } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: isCompact ? 10 : 12, weight: .semibold))
+                    .foregroundColor(viewModel.channelsPerPage < 8
+                        ? Color(white: 0.55) : Color(white: 0.25))
+                    .frame(width: isCompact ? 22 : 26, height: isCompact ? 28 : 34)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(viewModel.channelsPerPage >= 8)
+
+            // Page left
+            Button { viewModel.pageLeft() } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: isCompact ? 10 : 12, weight: .semibold))
+                    .foregroundColor(viewModel.canPageLeft
+                        ? Color(white: 0.55) : Color(white: 0.25))
+                    .frame(width: isCompact ? 22 : 26, height: isCompact ? 28 : 34)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(!viewModel.canPageLeft)
+
+            // Page right
+            Button { viewModel.pageRight() } label: {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: isCompact ? 10 : 12, weight: .semibold))
+                    .foregroundColor(viewModel.canPageRight
+                        ? Color(white: 0.55) : Color(white: 0.25))
+                    .frame(width: isCompact ? 22 : 26, height: isCompact ? 28 : 34)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(!viewModel.canPageRight)
         }
         .padding(.horizontal, isCompact ? 6 : 10)
     }

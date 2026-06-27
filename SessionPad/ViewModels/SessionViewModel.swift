@@ -26,6 +26,9 @@ final class SessionViewModel: ObservableObject {
     @Published var isLocked = false
     @Published var confirmationPending: ConfirmationAction? = nil
     @Published var scrollOffset: CGPoint = .zero
+    @Published var channelsPerPage: Int = 8
+    @Published var bankOffset: Int = 0
+    @Published var selectedTrackIndex: Int? = nil
 
     // MARK: Forwarded from Bridge
 
@@ -36,6 +39,16 @@ final class SessionViewModel: ObservableObject {
     var showManualConnect: Bool { bridge.showManualConnect }
     var discoveredDevices: [DiscoveredService] { bridge.discoveredDevices }
     var showDevicePicker: Bool { bridge.showDevicePicker }
+
+    var visibleTracks: [LiveTrack] {
+        Array(session.tracks.dropFirst(bankOffset).prefix(channelsPerPage))
+    }
+
+    var canPageLeft: Bool { bankOffset > 0 }
+
+    var canPageRight: Bool {
+        bankOffset + channelsPerPage < session.trackCount
+    }
 
     // MARK: Private
 
@@ -55,6 +68,12 @@ final class SessionViewModel: ObservableObject {
             self?.objectWillChange.send()
         }
         .store(in: &cancellables)
+
+        bridge.session.$tracks
+            .sink { [weak self] _ in
+                self?.clampBankOffset()
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Clip Actions
@@ -160,6 +179,16 @@ final class SessionViewModel: ObservableObject {
         bridge.armTrack(trackIndex: trackIndex, toggle: true)
     }
 
+    func selectTrack(trackIndex: Int) {
+        HapticEngine.shared.toggleControl()
+        if selectedTrackIndex == trackIndex {
+            selectedTrackIndex = nil
+            return
+        }
+        selectedTrackIndex = trackIndex
+        bridge.selectTrack(trackIndex: trackIndex)
+    }
+
     // MARK: - Transport Controls
 
     func play() {
@@ -188,6 +217,42 @@ final class SessionViewModel: ObservableObject {
         let newBpm = max(60, min(200, transport.bpm + delta))
         HapticEngine.shared.tempoTick()
         bridge.setTempo(newBpm)
+    }
+
+    // MARK: - Channel Paging
+
+    func increaseChannelsPerPage() {
+        guard channelsPerPage < 8 else { return }
+        channelsPerPage += 1
+        clampBankOffset()
+        HapticEngine.shared.toggleControl()
+    }
+
+    func decreaseChannelsPerPage() {
+        guard channelsPerPage > 2 else { return }
+        channelsPerPage -= 1
+        clampBankOffset()
+        HapticEngine.shared.toggleControl()
+    }
+
+    func pageRight() {
+        guard canPageRight else { return }
+        bankOffset = min(bankOffset + channelsPerPage, maxBankOffset)
+        HapticEngine.shared.toggleControl()
+    }
+
+    func pageLeft() {
+        guard canPageLeft else { return }
+        bankOffset = max(bankOffset - channelsPerPage, 0)
+        HapticEngine.shared.toggleControl()
+    }
+
+    private var maxBankOffset: Int {
+        max(0, session.trackCount - channelsPerPage)
+    }
+
+    private func clampBankOffset() {
+        bankOffset = min(bankOffset, maxBankOffset)
     }
 
     // MARK: - Mode Control

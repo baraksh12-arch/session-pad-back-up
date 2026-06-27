@@ -3,7 +3,7 @@
 //
 // Displays:
 //   - Track color strip
-//   - Track name (truncated)
+//   - Track name (truncated) — tap to select, swipe to page banks
 //   - Mute button (M)
 //   - Solo button (S)
 //   - Arm button (R)
@@ -14,28 +14,19 @@ struct TrackHeaderView: View {
 
     let track: LiveTrack
     let width: CGFloat
+    let isSelected: Bool
     let onMute: () -> Void
     let onSolo: () -> Void
     let onArm:  () -> Void
+    let onSelect: () -> Void
+    let onPageLeft: () -> Void
+    let onPageRight: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
-            // Color bar at top
-            Rectangle()
-                .fill(track.color)
-                .frame(height: 4)
+            trackHeadRegion
 
-            // Track name
-            Text(track.name)
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .foregroundColor(.white)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .padding(.horizontal, 4)
-                .padding(.vertical, 4)
-                .frame(maxWidth: .infinity)
-
-            // Control buttons
+            // Control buttons — separate from tap/swipe region
             HStack(spacing: 3) {
                 TrackControlButton(
                     label: "M",
@@ -60,8 +51,40 @@ struct TrackHeaderView: View {
             .padding(.bottom, 4)
         }
         .frame(width: width)
-        .background(Color(white: 0.12))
+        .background(isSelected ? Color(white: 0.20) : Color(white: 0.12))
         .clipShape(RoundedRectangle(cornerRadius: 4))
+    }
+
+    // MARK: - Track Head (color + name)
+
+    @ViewBuilder
+    private var trackHeadRegion: some View {
+        VStack(spacing: 0) {
+            Rectangle()
+                .fill(track.color)
+                .frame(height: 4)
+
+            Text(track.name)
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 4)
+                .frame(maxWidth: .infinity)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { onSelect() }
+        .gesture(
+            DragGesture(minimumDistance: 24)
+                .onEnded { value in
+                    if value.translation.width <= -24 {
+                        onPageRight()
+                    } else if value.translation.width >= 24 {
+                        onPageLeft()
+                    }
+                }
+        )
     }
 }
 
@@ -100,9 +123,13 @@ private struct TrackControlButton: View {
                 return t
             }(),
             width: 80,
+            isSelected: true,
             onMute: {},
             onSolo: {},
-            onArm: {}
+            onArm: {},
+            onSelect: {},
+            onPageLeft: {},
+            onPageRight: {}
         )
         TrackHeaderView(
             track: {
@@ -113,9 +140,13 @@ private struct TrackControlButton: View {
                 return t
             }(),
             width: 80,
+            isSelected: false,
             onMute: {},
             onSolo: {},
-            onArm: {}
+            onArm: {},
+            onSelect: {},
+            onPageLeft: {},
+            onPageRight: {}
         )
     }
     .padding()

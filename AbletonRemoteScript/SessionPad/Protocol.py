@@ -97,8 +97,6 @@ def get_clip_state(clip_slot):
     if clip.is_recording:
         return CLIP_RECORDING
     if clip.is_playing:
-        if clip.is_triggered:
-            return CLIP_QUEUED
         return CLIP_PLAYING
     if clip.is_triggered:
         if clip.will_record_on_start:

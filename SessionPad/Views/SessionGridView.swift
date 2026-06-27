@@ -10,25 +10,9 @@
 //   │ Scene 2  │  [clip]  │  [clip]  │  [clip]  │  │ scrolls vertically
 //   │ Scene 3  │  [clip]  │  [clip]  │  [clip]  │  ↓
 //   └──────────┴──────────┴──────────┴──────────┘
-//               ←──── scrolls horizontally ────→
 //
-// Implementation strategy for sticky header + sticky left column:
-//
-//   We use a SINGLE ScrollView([.horizontal, .vertical]) for the body.
-//   The track header row is a separate View OUTSIDE the ScrollView, placed
-//   above it in a VStack. It listens to the horizontal scroll offset via a
-//   PreferenceKey and mirrors it using an .offset() modifier, giving the
-//   appearance of being part of the scrolling content while staying fixed.
-//
-//   Similarly the scene label column is rendered INSIDE the ScrollView but
-//   sticks visually to the left edge by being placed in a ZStack overlay
-//   that offsets by the current horizontal scroll value.
-//
-// Landscape optimization:
-//   - On iPhone landscape: cells fill the full height minus the transport bar
-//     and track header. Cell height = (screen height - 112) / visible_scene_count
-//   - On iPad: larger default cell sizes, wider scene label column
-//   - GeometryReader drives all sizing so rotation is instant
+// Tracks are paged via the top-bar bank controls; only the current bank
+// is rendered and sized to fill the available width.
 
 import SwiftUI
 
@@ -43,7 +27,8 @@ struct GridMetrics {
 
     static func compute(
         containerSize: CGSize,
-        trackCount: Int,
+        channelsPerPage: Int,
+        visibleTrackCount: Int,
         sceneCount: Int,
         performanceMode: PerformanceMode,
         isLandscape: Bool,
@@ -61,11 +46,9 @@ struct GridMetrics {
         let availableW = containerSize.width  - sceneLabelWidth
         let availableH = containerSize.height - trackHeaderHeight
 
-        // Cell width: try to fit tracks on screen without scrolling if ≤ 8 tracks
-        let visibleTracks = max(1, min(trackCount, isIpad ? 10 : (isLandscape ? 8 : 5)))
-        let minCellW: CGFloat = isIpad ? 80 : 68
-        let fittedCellW = (availableW - gap * CGFloat(visibleTracks - 1)) / CGFloat(visibleTracks)
-        var cellW = max(minCellW, fittedCellW)
+        // Cell width: fill width for the current bank of tracks
+        let columnCount = max(1, min(channelsPerPage, visibleTrackCount))
+        let cellW = (availableW - gap * CGFloat(columnCount - 1)) / CGFloat(columnCount)
 
         // Cell height: try to fit scenes on screen without scrolling if ≤ 8 scenes
         let visibleScenes = max(1, min(sceneCount, isLandscape ? (isIpad ? 8 : 6) : 5))
@@ -75,7 +58,6 @@ struct GridMetrics {
 
         // Performance mode: enlarge cells
         if performanceMode == .performance {
-            cellW = max(cellW, isIpad ? 110 : 90)
             cellH = max(cellH, isIpad ? 90 : 72)
         }
 
@@ -95,22 +77,21 @@ struct SessionGridView: View {
 
     @ObservedObject var viewModel: SessionViewModel
 
-    // Horizontal scroll offset — shared between header row and body
-    @State private var hOffset: CGFloat = 0
-
     private var session: LiveSession { viewModel.session }
+    private var visibleTracks: [LiveTrack] { viewModel.visibleTracks }
 
     var body: some View {
         GeometryReader { geo in
             let isLandscape = geo.size.width > geo.size.height
             let isIpad      = UIDevice.current.userInterfaceIdiom == .pad
             let metrics     = GridMetrics.compute(
-                containerSize:    geo.size,
-                trackCount:       session.trackCount,
-                sceneCount:       session.sceneCount,
-                performanceMode:  viewModel.performanceMode,
-                isLandscape:      isLandscape,
-                isIpad:           isIpad
+                containerSize:     geo.size,
+                channelsPerPage:   viewModel.channelsPerPage,
+                visibleTrackCount: visibleTracks.count,
+                sceneCount:        session.sceneCount,
+                performanceMode:   viewModel.performanceMode,
+                isLandscape:       isLandscape,
+                isIpad:            isIpad
             )
 
             VStack(spacing: 0) {
@@ -129,29 +110,23 @@ struct SessionGridView: View {
     @ViewBuilder
     private func trackHeaderRow(metrics: GridMetrics) -> some View {
         HStack(spacing: 0) {
-            // Corner cell — sync button
             cornerCell(metrics: metrics)
 
-            // Clipping container so header doesn't spill outside its lane
-            GeometryReader { headerGeo in
-                HStack(spacing: metrics.gap) {
-                    ForEach(session.tracks) { track in
-                        TrackHeaderView(
-                            track: track,
-                            width: metrics.cellWidth,
-                            onMute: { viewModel.toggleMute(trackIndex: track.index) },
-                            onSolo: { viewModel.toggleSolo(trackIndex: track.index) },
-                            onArm:  { viewModel.toggleArm(trackIndex: track.index)  }
-                        )
-                    }
-                    // Right padding so last cell isn't clipped
-                    Spacer(minLength: 8)
+            HStack(spacing: metrics.gap) {
+                ForEach(visibleTracks) { track in
+                    TrackHeaderView(
+                        track: track,
+                        width: metrics.cellWidth,
+                        isSelected: viewModel.selectedTrackIndex == track.index,
+                        onMute: { viewModel.toggleMute(trackIndex: track.index) },
+                        onSolo: { viewModel.toggleSolo(trackIndex: track.index) },
+                        onArm:  { viewModel.toggleArm(trackIndex: track.index)  },
+                        onSelect: { viewModel.selectTrack(trackIndex: track.index) },
+                        onPageLeft: { viewModel.pageLeft() },
+                        onPageRight: { viewModel.pageRight() }
+                    )
                 }
-                // Mirror horizontal scroll offset
-                .offset(x: -hOffset)
-                .animation(nil, value: hOffset)  // no animation — must be instant
             }
-            .clipped()
         }
         .frame(height: metrics.trackHeaderHeight)
         .background(Color(white: 0.09))
@@ -190,106 +165,50 @@ struct SessionGridView: View {
         }
     }
 
-    // MARK: - Grid Body (2D Scrollable)
+    // MARK: - Grid Body (Vertical Scroll)
 
     @ViewBuilder
     private func gridBody(metrics: GridMetrics) -> some View {
-        ScrollViewReader { scrollProxy in
-            ScrollView([.horizontal, .vertical], showsIndicators: false) {
-                ZStack(alignment: .topLeading) {
-                    // Main clip matrix (full width including scene label placeholder)
-                    clipMatrix(metrics: metrics)
-
-                    // Sticky scene label column overlaid at left edge
-                    sceneColumn(metrics: metrics)
-                        .offset(x: hOffset)
-                        .animation(nil, value: hOffset)
-                }
-                // Track horizontal scroll position via background geometry reader
-                .background(
-                    GeometryReader { innerGeo in
-                        Color.clear
-                            .preference(
-                                key: HScrollOffsetKey.self,
-                                value: -innerGeo.frame(in: .named("sessionGrid")).origin.x
-                            )
-                    }
-                )
-            }
-            .coordinateSpace(name: "sessionGrid")
-            .onPreferenceChange(HScrollOffsetKey.self) { newOffset in
-                // Only update if meaningfully different (debounce rounding noise)
-                if abs(newOffset - hOffset) > 0.5 {
-                    hOffset = newOffset
-                }
-            }
-        }
-    }
-
-    // MARK: - Clip Matrix
-
-    @ViewBuilder
-    private func clipMatrix(metrics: GridMetrics) -> some View {
-        LazyVStack(spacing: metrics.gap, pinnedViews: []) {
-            ForEach(Array(session.scenes.enumerated()), id: \.element.id) { sIdx, _ in
-                LazyHStack(spacing: metrics.gap) {
-                    // Placeholder for scene label column width
-                    Color.clear
-                        .frame(width: metrics.sceneLabelWidth, height: metrics.cellHeight)
-
-                    // Clip slots for this row
-                    ForEach(session.tracks) { track in
-                        let slot: LiveClipSlot = {
-                            if sIdx < track.clipSlots.count {
-                                return track.clipSlots[sIdx]
-                            }
-                            return LiveClipSlot(trackIndex: track.index, sceneIndex: sIdx)
-                        }()
-
-                        ClipSlotView(
-                            slot: slot,
-                            cellSize: CGSize(width: metrics.cellWidth, height: metrics.cellHeight),
-                            isArmed: track.isArmed,
-                            progress: viewModel.clipProgress,
-                            bpm: viewModel.transport.bpm,
-                            isTransportPlaying: viewModel.transport.isPlaying,
-                            onTap: {
-                                viewModel.tapClip(trackIndex: track.index, sceneIndex: sIdx)
-                            },
-                            onLongPress: {
-                                viewModel.deleteClip(trackIndex: track.index, sceneIndex: sIdx)
-                            }
+        ScrollView(.vertical, showsIndicators: false) {
+            LazyVStack(spacing: metrics.gap) {
+                ForEach(Array(session.scenes.enumerated()), id: \.element.id) { sIdx, scene in
+                    HStack(spacing: metrics.gap) {
+                        SceneLaunchButton(
+                            scene: scene,
+                            width: metrics.sceneLabelWidth,
+                            height: metrics.cellHeight,
+                            onTap: { viewModel.tapScene(sceneIndex: sIdx) }
                         )
-                        .id("\(track.id)-\(sIdx)")
+
+                        ForEach(visibleTracks) { track in
+                            let slot: LiveClipSlot = {
+                                if sIdx < track.clipSlots.count {
+                                    return track.clipSlots[sIdx]
+                                }
+                                return LiveClipSlot(trackIndex: track.index, sceneIndex: sIdx)
+                            }()
+
+                            ClipSlotView(
+                                slot: slot,
+                                cellSize: CGSize(width: metrics.cellWidth, height: metrics.cellHeight),
+                                isArmed: track.isArmed,
+                                isTrackSelected: viewModel.selectedTrackIndex == track.index,
+                                progress: viewModel.clipProgress,
+                                bpm: viewModel.transport.bpm,
+                                isTransportPlaying: viewModel.transport.isPlaying,
+                                onTap: {
+                                    viewModel.tapClip(trackIndex: track.index, sceneIndex: sIdx)
+                                },
+                                onLongPress: {
+                                    viewModel.deleteClip(trackIndex: track.index, sceneIndex: sIdx)
+                                }
+                            )
+                            .id("\(track.id)-\(sIdx)")
+                        }
                     }
                 }
             }
-        }
-        .padding(.trailing, 8)
-        .padding(.bottom, 8)
-    }
-
-    // MARK: - Scene Label Column
-
-    @ViewBuilder
-    private func sceneColumn(metrics: GridMetrics) -> some View {
-        LazyVStack(spacing: metrics.gap) {
-            ForEach(Array(session.scenes.enumerated()), id: \.element.id) { sIdx, scene in
-                SceneLaunchButton(
-                    scene: scene,
-                    width: metrics.sceneLabelWidth,
-                    height: metrics.cellHeight,
-                    onTap: { viewModel.tapScene(sceneIndex: sIdx) }
-                )
-            }
-            Spacer(minLength: 8)
-        }
-        .frame(width: metrics.sceneLabelWidth)
-        .background(Color(white: 0.06))
-        .overlay(alignment: .trailing) {
-            Rectangle()
-                .frame(width: 1)
-                .foregroundColor(Color.white.opacity(0.1))
+            .padding(.bottom, 8)
         }
     }
 }
@@ -345,15 +264,6 @@ struct SceneLaunchButton: View {
                 .onChanged { _ in isPressed = true }
                 .onEnded   { _ in isPressed = false }
         )
-    }
-}
-
-// MARK: - Preference Keys
-
-private struct HScrollOffsetKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
     }
 }
 
