@@ -54,6 +54,7 @@ class IOSWebSocketServer:
             port,
             ping_interval=20,
             ping_timeout=20,
+            compression=None,  # iOS URLSessionWebSocketTask cannot handle permessage-deflate
         )
         log.info("iOS WebSocket server ready on %s:%d", host, port)
 
