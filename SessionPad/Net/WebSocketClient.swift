@@ -4,6 +4,7 @@
 import Foundation
 import Network
 import os.log
+import Darwin
 
 enum WebSocketClientState: Equatable {
     case disconnected
@@ -44,11 +45,14 @@ final class WebSocketClient: @unchecked Sendable {
                 let resolver = BonjourResolver { [weak self] result in
                     guard let self else { return }
                     self.bonjourResolver = nil
-                    switch result {
-                    case .success(let url):
-                        self.openWebSocket(url: url, completion: completion)
-                    case .failure(let error):
-                        DispatchQueue.main.async { completion(.failure(error)) }
+                    self.queue.async {
+                        switch result {
+                        case .success(let url):
+                            self.openWebSocket(url: url, completion: completion)
+                        case .failure(let error):
+                            os_log(.info, log: self.log, "NetService resolve failed (%{public}@), falling back to NWConnection", error.localizedDescription)
+                            self.resolveViaNWConnection(to: endpoint, completion: completion)
+                        }
                     }
                 }
                 self.bonjourResolver = resolver
@@ -119,6 +123,40 @@ final class WebSocketClient: @unchecked Sendable {
         @unknown default:
             return "127.0.0.1"
         }
+    }
+
+    /// Fallback: resolve Bonjour via NWConnection (TCP probe). Works with the Mac Swift bridge.
+    private func resolveViaNWConnection(to endpoint: NWEndpoint, completion: @escaping (Result<URL, Error>) -> Void) {
+        let connection = NWConnection(to: endpoint, using: .tcp)
+        resolveConnection = connection
+        connection.stateUpdateHandler = { [weak self] connState in
+            guard let self else { return }
+            switch connState {
+            case .ready:
+                guard let path = connection.currentPath,
+                      case .hostPort(let host, let port) = path.remoteEndpoint else {
+                    connection.cancel()
+                    self.resolveConnection = nil
+                    DispatchQueue.main.async { completion(.failure(WebSocketError.invalidEndpoint)) }
+                    return
+                }
+                let hostString = self.hostString(from: host)
+                connection.cancel()
+                self.resolveConnection = nil
+                guard let url = URL(string: "ws://\(hostString):\(port.rawValue)/") else {
+                    DispatchQueue.main.async { completion(.failure(WebSocketError.invalidURL)) }
+                    return
+                }
+                self.openWebSocket(url: url, completion: completion)
+            case .failed(let error):
+                connection.cancel()
+                self.resolveConnection = nil
+                DispatchQueue.main.async { completion(.failure(error)) }
+            default:
+                break
+            }
+        }
+        connection.start(queue: queue)
     }
 
     private func openWebSocket(url: URL, completion: @escaping (Result<URL, Error>) -> Void) {
@@ -238,22 +276,34 @@ enum WebSocketError: Error, LocalizedError {
 private final class BonjourResolver: NSObject, NetServiceDelegate {
     private var netService: NetService?
     private let completion: (Result<URL, Error>) -> Void
+    private var finished = false
 
     init(completion: @escaping (Result<URL, Error>) -> Void) {
         self.completion = completion
     }
 
     func resolve(name: String, type: String, domain: String) {
-        let serviceDomain = domain.isEmpty ? "local." : domain
-        let service = NetService(domain: serviceDomain, type: type, name: name)
+        var serviceDomain = domain.isEmpty ? "local." : domain
+        if !serviceDomain.hasSuffix(".") {
+            serviceDomain += "."
+        }
+        var serviceType = type
+        if !serviceType.hasSuffix(".") {
+            serviceType += "."
+        }
+
+        let service = NetService(domain: serviceDomain, type: serviceType, name: name)
         service.delegate = self
         netService = service
+        service.schedule(in: .main, forMode: .default)
         service.resolve(withTimeout: 5)
     }
 
     func cancel() {
-        netService?.stop()
-        netService?.delegate = nil
+        guard let service = netService else { return }
+        service.stop()
+        service.remove(from: .main, forMode: .default)
+        service.delegate = nil
         netService = nil
     }
 
@@ -262,11 +312,9 @@ private final class BonjourResolver: NSObject, NetServiceDelegate {
             finish(.failure(WebSocketError.bonjourResolveFailed))
             return
         }
-        var host = sender.hostName ?? ""
-        if host.hasSuffix(".") {
-            host.removeLast()
-        }
-        guard !host.isEmpty,
+
+        let host = Self.ipv4Host(from: sender.addresses) ?? Self.normalizedHostName(sender.hostName)
+        guard let host,
               let url = URL(string: "ws://\(host):\(sender.port)/") else {
             finish(.failure(WebSocketError.invalidURL))
             return
@@ -281,8 +329,36 @@ private final class BonjourResolver: NSObject, NetServiceDelegate {
     }
 
     private func finish(_ result: Result<URL, Error>) {
-        guard netService != nil else { return }
+        guard !finished else { return }
+        finished = true
         cancel()
         completion(result)
+    }
+
+    private static func normalizedHostName(_ hostName: String?) -> String? {
+        guard var host = hostName, !host.isEmpty else { return nil }
+        if host.hasSuffix(".") {
+            host.removeLast()
+        }
+        return host
+    }
+
+    private static func ipv4Host(from addresses: [Data]?) -> String? {
+        guard let addresses else { return nil }
+        for data in addresses {
+            let host: String? = data.withUnsafeBytes { pointer in
+                guard let base = pointer.baseAddress else { return nil }
+                let family = base.assumingMemoryBound(to: sockaddr.self).pointee.sa_family
+                guard family == sa_family_t(AF_INET) else { return nil }
+                var addr = base.assumingMemoryBound(to: sockaddr_in.self).pointee
+                var buffer = [CChar](repeating: 0, count: Int(INET_ADDRSTRLEN))
+                guard inet_ntop(AF_INET, &addr.sin_addr, &buffer, socklen_t(INET_ADDRSTRLEN)) != nil else {
+                    return nil
+                }
+                return String(cString: buffer)
+            }
+            if let host { return host }
+        }
+        return nil
     }
 }
