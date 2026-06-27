@@ -1,6 +1,6 @@
 # TransportListener.py
 # Attaches listeners to Ableton Live song-level transport properties:
-# is_playing, record_mode, metronome, tempo.
+# is_playing, record_mode, metronome, overdub, tempo.
 # Fires a JSON transport delta whenever any of these changes.
 
 
@@ -18,6 +18,7 @@ class TransportListener(object):
             'add_is_playing_listener',
             'add_record_mode_listener',
             'add_metronome_listener',
+            'add_overdub_listener',
             'add_tempo_listener',
         ]
         for method_name in listeners:
@@ -38,6 +39,7 @@ class TransportListener(object):
             'remove_is_playing_listener',
             'remove_record_mode_listener',
             'remove_metronome_listener',
+            'remove_overdub_listener',
             'remove_tempo_listener',
         ]
         for method_name in removers:

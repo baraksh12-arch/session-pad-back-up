@@ -31,7 +31,7 @@ struct TransportBarView: View {
 
             divider
 
-            // Transport: Play / Stop / Record / Metronome
+            // Transport: Play / Stop / Record / Metronome / Overdub
             transportButtons
 
             divider
@@ -120,6 +120,14 @@ struct TransportBarView: View {
                 activeColor: .cyan,
                 compact: isCompact
             ) { viewModel.toggleMetronome() }
+
+            TinyTransportButton(
+                icon: "smallcircle.circle.fill",
+                label: "Dub",
+                isActive: transport.overdubOn,
+                activeColor: .orange,
+                compact: isCompact
+            ) { viewModel.toggleOverdub() }
         }
         .padding(.horizontal, isCompact ? 8 : 12)
     }

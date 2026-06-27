@@ -65,6 +65,14 @@ final class HapticEngine {
         lightImpact.prepare()
     }
 
+    /// Fired when a clip is deleted via long-press.
+    func clipDelete() {
+        heavyImpact.impactOccurred(intensity: 1.0)
+        notificationGen.notificationOccurred(.warning)
+        heavyImpact.prepare()
+        notificationGen.prepare()
+    }
+
     /// Fired when toggling mute/solo/arm.
     func toggleControl() {
         selectionGen.selectionChanged()

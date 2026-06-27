@@ -152,8 +152,15 @@ struct PerformanceModeView: View {
                                         slot: slot,
                                         cellSize: cellSize,
                                         isLocked: viewModel.isLocked,
+                                        isArmed: track.isArmed,
+                                        progress: viewModel.clipProgress,
+                                        bpm: viewModel.transport.bpm,
+                                        isTransportPlaying: viewModel.transport.isPlaying,
                                         onTap: {
                                             fireClip(trackIndex: track.index, sceneIndex: sIdx, slotID: slot.id)
+                                        },
+                                        onLongPress: {
+                                            viewModel.deleteClip(trackIndex: track.index, sceneIndex: sIdx)
                                         }
                                     )
                                 }
@@ -213,17 +220,47 @@ struct PerformanceModeView: View {
 // MARK: - PerformanceClipCell
 
 private struct PerformanceClipCell: View {
+    private static let longPressDuration: Double = 0.5
+
     let slot: LiveClipSlot
     let cellSize: CGSize
     let isLocked: Bool
+    var isArmed: Bool = false
+    @ObservedObject var progress: ClipProgressStore
+    var bpm: Double = 120
+    var isTransportPlaying: Bool = false
     let onTap: () -> Void
+    var onLongPress: () -> Void = {}
+
+    init(
+        slot: LiveClipSlot,
+        cellSize: CGSize,
+        isLocked: Bool,
+        isArmed: Bool = false,
+        progress: ClipProgressStore,
+        bpm: Double = 120,
+        isTransportPlaying: Bool = false,
+        onTap: @escaping () -> Void,
+        onLongPress: @escaping () -> Void = {}
+    ) {
+        self.slot = slot
+        self.cellSize = cellSize
+        self.isLocked = isLocked
+        self.isArmed = isArmed
+        self._progress = ObservedObject(wrappedValue: progress)
+        self.bpm = bpm
+        self.isTransportPlaying = isTransportPlaying
+        self.onTap = onTap
+        self.onLongPress = onLongPress
+    }
 
     @State private var isPulsing = false
+    @State private var pressFlash = false
+    @State private var deleteArming = false
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(cellBackground)
+            cellBackgroundView
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
                         .strokeBorder(borderColor, lineWidth: 2)
@@ -243,12 +280,41 @@ private struct PerformanceClipCell: View {
                     }
                 }
                 .padding(8)
+            } else {
+                emptyControl
+            }
+
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.white.opacity(pressFlash ? 0.25 : 0))
+                .allowsHitTesting(false)
+
+            if deleteArming && !slot.isEmpty {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.red.opacity(0.35))
+                    .allowsHitTesting(false)
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(Color.red.opacity(0.9), lineWidth: 2)
+                    .allowsHitTesting(false)
             }
         }
         .frame(width: cellSize.width, height: cellSize.height)
+        .scaleEffect(deleteArming ? 0.94 : (pressFlash ? 0.96 : (isPulsing ? 1.03 : 1.0)))
         .contentShape(Rectangle())
-        .onTapGesture(perform: onTap)
-        .scaleEffect(isPulsing ? 1.03 : 1.0)
+        .onTapGesture { handleTap() }
+        .onLongPressGesture(
+            minimumDuration: Self.longPressDuration,
+            pressing: { pressing in
+                guard !slot.isEmpty else { return }
+                withAnimation(.easeOut(duration: 0.15)) {
+                    deleteArming = pressing
+                }
+            },
+            perform: {
+                guard !slot.isEmpty else { return }
+                deleteArming = false
+                onLongPress()
+            }
+        )
         .animation(
             slot.isPlaying ? .easeInOut(duration: 0.8).repeatForever(autoreverses: true) : .default,
             value: isPulsing
@@ -257,7 +323,62 @@ private struct PerformanceClipCell: View {
         .onAppear { isPulsing = slot.isPlaying }
     }
 
-    private var cellBackground: Color {
+    @ViewBuilder
+    private var emptyControl: some View {
+        if isArmed {
+            Circle()
+                .strokeBorder(Color.red.opacity(0.7), lineWidth: 2)
+                .background(Circle().fill(Color.red.opacity(slot.state == .recQueued ? 0.5 : 0.15)))
+                .frame(width: 14, height: 14)
+        } else {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(Color.clear)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 2)
+                        .strokeBorder(Color.white.opacity(0.35), lineWidth: 1.5)
+                )
+                .frame(width: 12, height: 12)
+        }
+    }
+
+    private func handleTap() {
+        guard !isLocked else { return }
+        withAnimation(.easeOut(duration: 0.08)) { pressFlash = true }
+        onTap()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            withAnimation(.easeOut(duration: 0.15)) { pressFlash = false }
+        }
+    }
+
+    @ViewBuilder
+    private var cellBackgroundView: some View {
+        if slot.isEmpty {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color(white: 0.08))
+        } else if slot.isPlaying {
+            TimelineView(.animation) { context in
+                let fraction = ClipProgressInterpolator.fraction(
+                    sample: progress.sample(for: slot.id),
+                    bpm: bpm,
+                    isTransportPlaying: isTransportPlaying,
+                    now: context.date
+                )
+                ClipProgressFillView(
+                    color: slot.color,
+                    cellSize: cellSize,
+                    fraction: fraction,
+                    cornerRadius: 8,
+                    drainedOpacity: 0.35,
+                    filledOpacity: 0.75
+                )
+            }
+        } else {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(cellBackgroundColor)
+        }
+    }
+
+    private var cellBackgroundColor: Color {
         if slot.isEmpty { return Color(white: 0.08) }
         switch slot.state {
         case .playing:   return slot.color.opacity(0.75)

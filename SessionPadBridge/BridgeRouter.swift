@@ -200,7 +200,7 @@ final class BridgeRouter: ObservableObject {
                 sessionName = name
             }
 
-        case MessageType.deltaClip, MessageType.deltaTrack, MessageType.deltaScene, MessageType.deltaTransport:
+        case MessageType.deltaClip, MessageType.deltaTrack, MessageType.deltaScene, MessageType.deltaTransport, MessageType.deltaPlaypos:
             iosServer.broadcast(text: text)
 
         case MessageType.ack:

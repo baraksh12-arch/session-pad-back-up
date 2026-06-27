@@ -141,6 +141,7 @@ enum MessageType {
     static let deltaTrack = "delta.track"
     static let deltaScene = "delta.scene"
     static let deltaTransport = "delta.transport"
+    static let deltaPlaypos = "delta.playpos"
     static let heartbeat = "heartbeat"
     static let ack = "ack"
     static let cmd = "cmd"
@@ -219,7 +220,19 @@ struct TransportDelta: Codable, Sendable {
     let playing: Bool
     let recording: Bool
     let metronome: Bool
+    let overdub: Bool
     let bpm: Double
+}
+
+struct PlayPosDelta: Codable, Sendable {
+    let clips: [PlayPosClip]
+}
+
+struct PlayPosClip: Codable, Sendable {
+    let track: Int
+    let scene: Int
+    let p: Double
+    let lb: Double
 }
 
 // MARK: - Codec

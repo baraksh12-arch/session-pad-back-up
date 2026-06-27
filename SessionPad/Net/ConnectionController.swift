@@ -208,7 +208,7 @@ final class ConnectionController: ObservableObject {
             handleAck(message)
         case MessageType.error:
             handleError(message)
-        case MessageType.deltaClip, MessageType.deltaTrack, MessageType.deltaScene, MessageType.deltaTransport:
+        case MessageType.deltaClip, MessageType.deltaTrack, MessageType.deltaScene, MessageType.deltaTransport, MessageType.deltaPlaypos:
             handleDelta(message)
         default:
             break

@@ -19,15 +19,25 @@ final class AbletonBridge: ObservableObject {
     @Published private(set) var session: LiveSession = LiveSession()
     @Published private(set) var transport: TransportState = TransportState()
     @Published private(set) var latencyEstimate: String = "–"
+    let progress = ClipProgressStore()
 
     @Published private(set) var showManualConnect = false
 
     private let connection = ConnectionController()
     private let log = OSLog(subsystem: "com.scharovsky.SessionPad", category: "Bridge")
     private var commandReconcileTimer: Timer?
+    private var cancellables = Set<AnyCancellable>()
 
     init() {
         connection.delegate = self
+        session.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
+        .store(in: &cancellables)
+        progress.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
+        .store(in: &cancellables)
     }
 
     func start() {
@@ -49,16 +59,37 @@ final class AbletonBridge: ObservableObject {
 
     // MARK: - Outgoing Commands
 
-    func launchClip(trackIndex: Int, sceneIndex: Int) {
+    func launchClip(trackIndex: Int, sceneIndex: Int, isEmpty: Bool = false, isArmed: Bool = false) {
         let data: [String: JSONValue] = [
             "track": .int(trackIndex),
             "scene": .int(sceneIndex),
         ]
-        sendCommand(
-            name: "launchClip",
-            data: data,
-            optimistic: { self.session.setClipState(.queued, trackIndex: trackIndex, sceneIndex: sceneIndex) }
-        )
+        let optimistic: (() -> Void)? = {
+            if isEmpty {
+                if isArmed {
+                    return { self.session.setClipState(.recQueued, trackIndex: trackIndex, sceneIndex: sceneIndex) }
+                }
+                return { self.session.stopClipsOnTrack(trackIndex: trackIndex) }
+            }
+            return { self.session.setClipState(.queued, trackIndex: trackIndex, sceneIndex: sceneIndex) }
+        }()
+        sendCommand(name: "launchClip", data: data, optimistic: optimistic)
+    }
+
+    func deleteClip(trackIndex: Int, sceneIndex: Int) {
+        let data: [String: JSONValue] = [
+            "track": .int(trackIndex),
+            "scene": .int(sceneIndex),
+        ]
+        sendCommand(name: "deleteClip", data: data) {
+            self.session.updateClip(
+                trackIndex: trackIndex,
+                sceneIndex: sceneIndex,
+                state: .empty,
+                colorIndex: 0,
+                name: ""
+            )
+        }
     }
 
     func launchScene(sceneIndex: Int) {
@@ -105,6 +136,10 @@ final class AbletonBridge: ObservableObject {
         sendCommand(name: "transport", data: ["action": .string("metronome")])
     }
 
+    func toggleOverdub() {
+        sendCommand(name: "transport", data: ["action": .string("overdub")])
+    }
+
     func setTempo(_ bpm: Double) {
         sendCommand(name: "setTempo", data: ["bpm": .double(bpm)]) {
             self.transport.bpm = bpm
@@ -143,6 +178,7 @@ final class AbletonBridge: ObservableObject {
     }
 
     private func applyFullState(_ payload: FullStatePayload) {
+        progress.clearAll()
         session.reset(trackCount: payload.tracks, sceneCount: payload.scenes)
         for track in payload.trackHeaders {
             session.updateTrack(
@@ -173,6 +209,7 @@ final class AbletonBridge: ObservableObject {
         transport.isPlaying = delta.playing
         transport.isRecording = delta.recording
         transport.metronomeOn = delta.metronome
+        transport.overdubOn = delta.overdub
         transport.bpm = delta.bpm
     }
 
@@ -191,6 +228,20 @@ final class AbletonBridge: ObservableObject {
                     colorIndex: clip.color,
                     name: clip.name
                 )
+                if clip.state == .stopped || clip.state == .empty || clip.state == .recording {
+                    progress.clear(trackIndex: clip.track, sceneIndex: clip.scene)
+                }
+            }
+        case MessageType.deltaPlaypos:
+            if let payload = try? ProtocolCodec.decodePayload(PlayPosDelta.self, from: message) {
+                for clip in payload.clips {
+                    progress.update(
+                        trackIndex: clip.track,
+                        sceneIndex: clip.scene,
+                        fraction: clip.p,
+                        loopBeats: clip.lb
+                    )
+                }
             }
         case MessageType.deltaTrack:
             if let track = try? ProtocolCodec.decodePayload(TrackDelta.self, from: message) {

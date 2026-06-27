@@ -249,8 +249,15 @@ struct SessionGridView: View {
                         ClipSlotView(
                             slot: slot,
                             cellSize: CGSize(width: metrics.cellWidth, height: metrics.cellHeight),
+                            isArmed: track.isArmed,
+                            progress: viewModel.clipProgress,
+                            bpm: viewModel.transport.bpm,
+                            isTransportPlaying: viewModel.transport.isPlaying,
                             onTap: {
                                 viewModel.tapClip(trackIndex: track.index, sceneIndex: sIdx)
+                            },
+                            onLongPress: {
+                                viewModel.deleteClip(trackIndex: track.index, sceneIndex: sIdx)
                             }
                         )
                         .id("\(track.id)-\(sIdx)")

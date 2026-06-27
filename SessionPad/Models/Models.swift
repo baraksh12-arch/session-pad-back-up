@@ -94,6 +94,7 @@ class TransportState: ObservableObject {
     @Published var isPlaying   = false
     @Published var isRecording = false
     @Published var metronomeOn = false
+    @Published var overdubOn = false
     @Published var bpm: Double = 120.0
 }
 
@@ -142,6 +143,19 @@ final class LiveSession: ObservableObject {
               sceneIndex < tracks[trackIndex].clipSlots.count
         else { return }
         tracks[trackIndex].clipSlots[sceneIndex].state = state
+    }
+
+    /// Optimistic update when an empty slot is tapped (acts as track stop button).
+    func stopClipsOnTrack(trackIndex: Int) {
+        guard trackIndex < tracks.count else { return }
+        for i in tracks[trackIndex].clipSlots.indices {
+            switch tracks[trackIndex].clipSlots[i].state {
+            case .playing, .recording, .queued, .recQueued:
+                tracks[trackIndex].clipSlots[i].state = .stopped
+            default:
+                break
+            }
+        }
     }
 
     // MARK: - Track Updates

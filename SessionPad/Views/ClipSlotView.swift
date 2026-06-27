@@ -16,6 +16,8 @@ private enum ClipMetrics {
     static let cornerRadius: CGFloat = 6
     static let borderWidth: CGFloat  = 1.5
     static let indicatorSize: CGFloat = 10
+    static let stopButtonSize: CGFloat = 10
+    static let longPressDuration: Double = 0.5
 }
 
 // MARK: - ClipSlotView
@@ -24,9 +26,36 @@ struct ClipSlotView: View {
 
     let slot: LiveClipSlot
     let cellSize: CGSize
+    var isArmed: Bool = false
+    @ObservedObject var progress: ClipProgressStore
+    var bpm: Double = 120
+    var isTransportPlaying: Bool = false
     let onTap: () -> Void
+    var onLongPress: () -> Void = {}
+
+    init(
+        slot: LiveClipSlot,
+        cellSize: CGSize,
+        isArmed: Bool = false,
+        progress: ClipProgressStore,
+        bpm: Double = 120,
+        isTransportPlaying: Bool = false,
+        onTap: @escaping () -> Void,
+        onLongPress: @escaping () -> Void = {}
+    ) {
+        self.slot = slot
+        self.cellSize = cellSize
+        self.isArmed = isArmed
+        self._progress = ObservedObject(wrappedValue: progress)
+        self.bpm = bpm
+        self.isTransportPlaying = isTransportPlaying
+        self.onTap = onTap
+        self.onLongPress = onLongPress
+    }
 
     @State private var isPulsing = false
+    @State private var pressFlash = false
+    @State private var deleteArming = false
 
     var body: some View {
         ZStack {
@@ -42,15 +71,45 @@ struct ClipSlotView: View {
 
             // State indicator dot (bottom-left corner)
             stateIndicatorLayer
+
+            // Momentary press flash
+            RoundedRectangle(cornerRadius: ClipMetrics.cornerRadius)
+                .fill(Color.white.opacity(pressFlash ? 0.25 : 0))
+                .allowsHitTesting(false)
+
+            // Long-press delete arming overlay
+            if deleteArming && !slot.isEmpty {
+                RoundedRectangle(cornerRadius: ClipMetrics.cornerRadius)
+                    .fill(Color.red.opacity(0.35))
+                    .allowsHitTesting(false)
+                RoundedRectangle(cornerRadius: ClipMetrics.cornerRadius)
+                    .strokeBorder(Color.red.opacity(0.9), lineWidth: 2)
+                    .allowsHitTesting(false)
+            }
         }
         .frame(width: cellSize.width, height: cellSize.height)
+        .scaleEffect(deleteArming ? 0.94 : (pressFlash ? 0.96 : 1.0))
         .clipShape(RoundedRectangle(cornerRadius: ClipMetrics.cornerRadius))
         .overlay(
             RoundedRectangle(cornerRadius: ClipMetrics.cornerRadius)
                 .strokeBorder(borderColor, lineWidth: ClipMetrics.borderWidth)
         )
         .contentShape(Rectangle())
-        .onTapGesture { onTap() }
+        .onTapGesture { handleTap() }
+        .onLongPressGesture(
+            minimumDuration: ClipMetrics.longPressDuration,
+            pressing: { pressing in
+                guard !slot.isEmpty else { return }
+                withAnimation(.easeOut(duration: 0.15)) {
+                    deleteArming = pressing
+                }
+            },
+            perform: {
+                guard !slot.isEmpty else { return }
+                deleteArming = false
+                onLongPress()
+            }
+        )
         .onChange(of: slot.state) { newState in
             updatePulse(for: newState)
         }
@@ -65,9 +124,23 @@ struct ClipSlotView: View {
     private var backgroundLayer: some View {
         if slot.isEmpty {
             Color(white: 0.10)
+        } else if slot.isPlaying {
+            TimelineView(.animation) { context in
+                let fraction = ClipProgressInterpolator.fraction(
+                    sample: progress.sample(for: slot.id),
+                    bpm: bpm,
+                    isTransportPlaying: isTransportPlaying,
+                    now: context.date
+                )
+                ClipProgressFillView(
+                    color: slot.color,
+                    cellSize: cellSize,
+                    fraction: fraction
+                )
+            }
         } else {
             slot.color
-                .opacity(slot.isPlaying || slot.isRecording ? 0.85 : 0.55)
+                .opacity(slot.isRecording ? 0.85 : 0.55)
         }
     }
 
@@ -88,10 +161,20 @@ struct ClipSlotView: View {
 
     @ViewBuilder
     private var emptyLayer: some View {
-        // Subtle plus icon hint for armed tracks
-        Image(systemName: "plus")
-            .font(.system(size: 10, weight: .light))
-            .foregroundColor(Color(white: 0.3))
+        if isArmed {
+            Circle()
+                .strokeBorder(Color.red.opacity(0.7), lineWidth: 1.5)
+                .background(Circle().fill(Color.red.opacity(slot.state == .recQueued ? 0.5 : 0.15)))
+                .frame(width: ClipMetrics.stopButtonSize + 2, height: ClipMetrics.stopButtonSize + 2)
+        } else {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(Color.clear)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 2)
+                        .strokeBorder(Color.white.opacity(0.35), lineWidth: 1)
+                )
+                .frame(width: ClipMetrics.stopButtonSize, height: ClipMetrics.stopButtonSize)
+        }
     }
 
     @ViewBuilder
@@ -99,8 +182,10 @@ struct ClipSlotView: View {
         VStack {
             Spacer()
             HStack {
-                stateIndicator
-                    .padding(5)
+                if !slot.isEmpty {
+                    stateIndicator
+                        .padding(5)
+                }
                 Spacer()
             }
         }
@@ -183,6 +268,14 @@ struct ClipSlotView: View {
         }
     }
 
+    private func handleTap() {
+        withAnimation(.easeOut(duration: 0.08)) { pressFlash = true }
+        onTap()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            withAnimation(.easeOut(duration: 0.15)) { pressFlash = false }
+        }
+    }
+
     private func updatePulse(for state: ClipState) {
         let shouldPulse = state == .playing || state == .recording ||
                           state == .queued || state == .recQueued
@@ -195,6 +288,7 @@ struct ClipSlotView: View {
 // MARK: - Preview
 
 #Preview {
+    let progress = ClipProgressStore()
     HStack(spacing: 2) {
         ForEach([ClipState.empty, .stopped, .playing, .recording, .queued], id: \.rawValue) { state in
             let slot: LiveClipSlot = {
@@ -204,7 +298,11 @@ struct ClipSlotView: View {
                 s.colorIndex = 1
                 return s
             }()
-            ClipSlotView(slot: slot, cellSize: CGSize(width: 80, height: 60)) {}
+            ClipSlotView(
+                slot: slot,
+                cellSize: CGSize(width: 80, height: 60),
+                progress: progress
+            ) {}
         }
     }
     .padding()

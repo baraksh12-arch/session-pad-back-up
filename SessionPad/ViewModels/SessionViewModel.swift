@@ -31,6 +31,7 @@ final class SessionViewModel: ObservableObject {
 
     var session: LiveSession { bridge.session }
     var transport: TransportState { bridge.transport }
+    var clipProgress: ClipProgressStore { bridge.progress }
     var connectionState: ConnectionState { bridge.connectionState }
     var showManualConnect: Bool { bridge.showManualConnect }
 
@@ -68,6 +69,7 @@ final class SessionViewModel: ObservableObject {
         else { return }
 
         let slot = tracks[trackIndex].clipSlots[sceneIndex]
+        let track = tracks[trackIndex]
 
         if performanceMode == .performance && !slot.isEmpty {
             // In performance mode, require confirmation for non-empty clips
@@ -76,8 +78,34 @@ final class SessionViewModel: ObservableObject {
             // are the safety mechanism; confirmation is for lock mode only
         }
 
-        HapticEngine.shared.clipLaunch()
-        bridge.launchClip(trackIndex: trackIndex, sceneIndex: sceneIndex)
+        if slot.isEmpty && !track.isArmed {
+            HapticEngine.shared.trackStop()
+        } else {
+            HapticEngine.shared.clipLaunch()
+        }
+        bridge.launchClip(
+            trackIndex: trackIndex,
+            sceneIndex: sceneIndex,
+            isEmpty: slot.isEmpty,
+            isArmed: track.isArmed
+        )
+    }
+
+    func deleteClip(trackIndex: Int, sceneIndex: Int) {
+        guard !isLocked else {
+            HapticEngine.shared.error()
+            return
+        }
+
+        let tracks = session.tracks
+        guard trackIndex < tracks.count,
+              sceneIndex < tracks[trackIndex].clipSlots.count
+        else { return }
+
+        guard !tracks[trackIndex].clipSlots[sceneIndex].isEmpty else { return }
+
+        HapticEngine.shared.clipDelete()
+        bridge.deleteClip(trackIndex: trackIndex, sceneIndex: sceneIndex)
     }
 
     func tapScene(sceneIndex: Int) {
@@ -148,6 +176,10 @@ final class SessionViewModel: ObservableObject {
 
     func toggleMetronome() {
         bridge.toggleMetronome()
+    }
+
+    func toggleOverdub() {
+        bridge.toggleOverdub()
     }
 
     func adjustTempo(by delta: Double) {

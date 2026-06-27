@@ -21,6 +21,7 @@
 		A1000015 /* PerformanceModeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000015 /* PerformanceModeView.swift */; };
 		A1000016 /* ColorMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000016 /* ColorMapper.swift */; };
 		A1000017 /* HapticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000017 /* HapticEngine.swift */; };
+		A1000018 /* ClipProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000018 /* ClipProgressStore.swift */; };
 		A1000020 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1000021 /* Assets.xcassets */; };
 		A1000021 /* Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000022 /* Protocol.swift */; };
 		A1000022 /* SessionDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000023 /* SessionDiscovery.swift */; };
@@ -48,6 +49,7 @@
 		B1000015 /* PerformanceModeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceModeView.swift; sourceTree = "<group>"; };
 		B1000016 /* ColorMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorMapper.swift; sourceTree = "<group>"; };
 		B1000017 /* HapticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticEngine.swift; sourceTree = "<group>"; };
+		B1000018 /* ClipProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipProgressStore.swift; sourceTree = "<group>"; };
 		B1000020 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B1000021 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B1000022 /* Protocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Protocol.swift; sourceTree = "<group>"; };
@@ -112,6 +114,7 @@
 			isa = PBXGroup;
 			children = (
 				B1000004 /* Models.swift */,
+				B1000018 /* ClipProgressStore.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -297,6 +300,7 @@
 				A1000002 /* AppDelegate.swift in Sources */,
 				A1000003 /* ContentView.swift in Sources */,
 				A1000004 /* Models.swift in Sources */,
+				A1000018 /* ClipProgressStore.swift in Sources */,
 				A1000007 /* AbletonBridge.swift in Sources */,
 				A1000009 /* SessionViewModel.swift in Sources */,
 				A1000010 /* SessionGridView.swift in Sources */,

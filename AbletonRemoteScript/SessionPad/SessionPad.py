@@ -26,7 +26,9 @@ from .Protocol import (
     encode_track_delta,
     encode_scene_delta,
     encode_transport_delta,
+    encode_playpos_delta,
     build_full_state,
+    T_DELTA_PLAYPOS,
 )
 from .CommandHandler import CommandHandler
 from .ClipListener import ClipMatrixListener
@@ -36,7 +38,9 @@ from .TransportListener import TransportListener
 from .transport.LiveBridgeClient import LiveBridgeClient
 
 FLUSH_TICK_INTERVAL = 1
+PLAYPOS_TICK_INTERVAL = 2
 T_BRIDGE_SESSION = "bridge.session"
+SCRIPT_BUILD = "2026-06-27-playpos2"
 
 
 class SessionPad(object):
@@ -49,8 +53,9 @@ class SessionPad(object):
         self._last_heartbeat = 0.0
         self._seq = 0
         self._snapshot_rev = 0
+        self._playpos_log_count = 0
 
-        self._command_handler = CommandHandler(self._song)
+        self._command_handler = CommandHandler(self._song, log=self._log)
         self._pending_outbound = []
 
         self._bridge = LiveBridgeClient(
@@ -77,7 +82,7 @@ class SessionPad(object):
             self._song,
             on_change=self._on_transport_changed,
         )
-        self._log("Remote Script loaded — connect SessionPad Bridge on this Mac")
+        self._log("Remote Script loaded build=%s" % SCRIPT_BUILD)
 
     def _log(self, message):
         try:
@@ -122,6 +127,9 @@ class SessionPad(object):
 
         if self._tick_count % FLUSH_TICK_INTERVAL == 0:
             self._flush_outbound()
+
+        if self._bridge.is_connected and self._tick_count % PLAYPOS_TICK_INTERVAL == 0:
+            self._poll_playing_positions()
 
         now = time.time()
         if self._bridge.is_connected and now - self._last_heartbeat >= (HEARTBEAT_INTERVAL_MS / 1000.0):
@@ -211,7 +219,9 @@ class SessionPad(object):
     def _handle_command(self, payload, msg_id):
         cmd_name = payload.get("name", "")
         cmd_payload = payload.get("data") or {}
+        self._log("cmd %s %s" % (cmd_name, cmd_payload))
         ok, error = self._command_handler.execute(cmd_name, cmd_payload)
+        self._log("cmd %s ok=%s err=%s" % (cmd_name, ok, error))
         if msg_id:
             ack_payload = {"ok": bool(ok)}
             if error:
@@ -265,6 +275,61 @@ class SessionPad(object):
             )
         except Exception:
             pass
+
+    def _poll_playing_positions(self):
+        """Poll playing clip loop positions and send a batched delta."""
+        from .Protocol import _clip_loop_fraction
+
+        playing = []
+        try:
+            tracks = list(self._song.tracks)
+            for t_idx, track in enumerate(tracks):
+                try:
+                    slot_index = track.playing_slot_index
+                except (AttributeError, TypeError):
+                    continue
+                if slot_index is None or slot_index < 0:
+                    continue
+                try:
+                    clip_slot = track.clip_slots[slot_index]
+                except (IndexError, AttributeError):
+                    continue
+                if not clip_slot.has_clip:
+                    continue
+                clip = clip_slot.clip
+                try:
+                    if clip.is_recording:
+                        continue
+                    if not clip.is_playing:
+                        continue
+                except (AttributeError, TypeError):
+                    continue
+                fraction, loop_len = _clip_loop_fraction(clip)
+                if fraction is None:
+                    continue
+                playing.append(
+                    {
+                        "track": t_idx,
+                        "scene": int(slot_index),
+                        "p": fraction,
+                        "lb": loop_len,
+                    }
+                )
+        except Exception:
+            return
+
+        if not playing:
+            return
+        try:
+            delta = encode_playpos_delta(playing)
+            self._queue_send(
+                encode_message(T_DELTA_PLAYPOS, payload=delta, seq=self._next_seq())
+            )
+            self._playpos_log_count += 1
+            if self._playpos_log_count % 20 == 1:
+                self._log("playpos sent count=%d clips=%s" % (self._playpos_log_count, delta["clips"]))
+        except Exception as exc:
+            self._log("playpos send failed: %s" % exc)
 
     # ─── Outbound queue ───────────────────────────────────────────────────────
 

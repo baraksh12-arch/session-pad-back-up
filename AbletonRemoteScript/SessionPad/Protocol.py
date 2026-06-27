@@ -37,6 +37,7 @@ T_DELTA_CLIP = "delta.clip"
 T_DELTA_TRACK = "delta.track"
 T_DELTA_SCENE = "delta.scene"
 T_DELTA_TRANSPORT = "delta.transport"
+T_DELTA_PLAYPOS = "delta.playpos"
 T_HEARTBEAT = "heartbeat"
 T_ACK = "ack"
 T_CMD = "cmd"
@@ -146,8 +147,43 @@ def encode_transport_delta(song):
         "playing": bool(song.is_playing),
         "recording": bool(song.record_mode),
         "metronome": bool(song.metronome),
+        "overdub": bool(song.overdub),
         "bpm": round(float(song.tempo), 1),
     }
+
+
+def _clip_loop_fraction(clip):
+    """Normalized loop progress [0, 1) and loop length in beats."""
+    try:
+        loop_start = float(clip.loop_start)
+        loop_end = float(clip.loop_end)
+        position = float(clip.playing_position)
+    except (TypeError, ValueError, AttributeError):
+        return None, 0.0
+    loop_len = loop_end - loop_start
+    if loop_len <= 0.0:
+        return None, 0.0
+    fraction = (position - loop_start) / loop_len
+    if fraction < 0.0:
+        fraction = 0.0
+    elif fraction >= 1.0:
+        fraction = fraction % 1.0
+    return fraction, loop_len
+
+
+def encode_playpos_delta(playing):
+    """Build a delta.playpos payload from a list of playing clip entries."""
+    clips = []
+    for entry in playing:
+        clips.append(
+            {
+                "track": int(entry["track"]),
+                "scene": int(entry["scene"]),
+                "p": round(float(entry["p"]), 4),
+                "lb": round(float(entry["lb"]), 4),
+            }
+        )
+    return {"clips": clips}
 
 
 def build_full_state(song):
